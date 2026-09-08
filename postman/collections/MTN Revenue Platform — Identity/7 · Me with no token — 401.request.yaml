@@ -1,0 +1,15 @@
+$kind: http-request
+description: Auth is switched off for this one request, so no Authorization header goes out. AuthGuard rejects it before the route runs.
+url: "{{baseUrl}}/auth/me"
+method: GET
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 Unauthorized', () => pm.response.to.have.status(401));
+      pm.test('says the bearer token is missing', () => {
+        pm.expect(pm.response.json().message).to.include('Missing bearer token');
+      });
+    language: text/javascript
+order: 7000

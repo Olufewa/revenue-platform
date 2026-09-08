@@ -1,0 +1,25 @@
+$kind: http-request
+description: Same body as request 1. The unique index on User.email plus the explicit findUnique check in register() turns this into a clean 409 instead of a database error surfacing as a 500.
+url: "{{baseUrl}}/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{testEmail}}",
+      "name": "Fewa",
+      "password": "{{testPassword}}"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      pm.test('says the email is taken', () => {
+        pm.expect(pm.response.json().message).to.include('already registered');
+      });
+    language: text/javascript
+order: 2000

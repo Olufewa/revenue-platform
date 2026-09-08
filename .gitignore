@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.local
+.DS_Store
+generated/
+/generated/prisma
+
+# editor scratch
+.vscode/
+.idea/
+*.tsbuildinfo

@@ -1,0 +1,41 @@
+$kind: http-request
+description: Four separate failures in one body. The global ValidationPipe in main.ts reports all of them at once, and forbidNonWhitelisted is what makes the extra isAdmin field an error instead of something silently dropped.
+url: "{{baseUrl}}/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "not-an-email",
+      "name": "x",
+      "password": "123",
+      "isAdmin": true
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+
+      const messages = pm.response.json().message.join(' | ');
+
+      pm.test('rejects the malformed email', () => {
+        pm.expect(messages).to.include('does not look like an email');
+      });
+      pm.test('rejects the 3-character password', () => {
+        pm.expect(messages).to.include('at least 8 characters');
+      });
+      pm.test('rejects the 1-character name', () => {
+        pm.expect(messages).to.include('at least 2 characters');
+      });
+
+      // forbidNonWhitelisted earning its keep: a field the DTO never
+      // declared is refused outright rather than quietly ignored.
+      pm.test('refuses the undeclared isAdmin field', () => {
+        pm.expect(messages).to.include('isAdmin');
+      });
+    language: text/javascript
+order: 9000

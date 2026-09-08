@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: d6b2b156-cb34-4a88-999b-a6e443a798b6
+
+cloudResources:
+  collections:
+    ../postman/collections/MTN Revenue Platform — Identity: 83902680-6e5c-4bea-bcec-87ecf41463ae
+
+# All resources in the `postman/` folder are automatically registered in Local View.
+# Point to additional files outside the `postman/` folder to register them individually. Example:
+#localResources:
+#  collections:
+#    - ../tests/E2E Test Collection/

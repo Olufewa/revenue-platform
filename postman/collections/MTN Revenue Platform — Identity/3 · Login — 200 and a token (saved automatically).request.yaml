@@ -1,0 +1,29 @@
+$kind: http-request
+description: 200 rather than Nest's default 201, because logging in does not create anything. @HttpCode(200) on the controller is what makes that true. The JWT is signed with JWT_SECRET and expires in 1 day.
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{testEmail}}",
+      "password": "{{testPassword}}"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK, not 201', () => pm.response.to.have.status(200));
+
+      const body = pm.response.json();
+      pm.test('returns access_token', () => {
+        pm.expect(body.access_token).to.be.a('string').and.to.have.length.above(20);
+      });
+
+      // Every later request picks the token up from here.
+      pm.collectionVariables.set('accessToken', body.access_token);
+    language: text/javascript
+order: 3000
