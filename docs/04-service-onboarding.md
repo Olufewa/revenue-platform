@@ -148,6 +148,8 @@ The absent-header message (`Missing x-api-key header`) deliberately differs from
 
 `lastUsedAt` is written at most once per five minutes per key. Ingesting revenue events generates high write concurrency across product services; updating the exact timestamp on every single request causes severe row-level lock contention and unnecessary write traffic on the `ApiKey` row. The underlying principle: when an audit or tracking field is only needed approximately, coarsen how frequently it writes to keep hot transaction paths fast and uncontended.
 
+API key parsing previously split the key string on `_` (`sk_live_<publicId>_<secret>`). Because secrets were encoded using `base64url`, which includes both `-` and `_`, roughly half of all generated 32-byte secrets naturally contained at least one underscore. Splitting on `_` fragmented the secret into five or more pieces, causing `ApiKeyGuard` to reject valid keys with `401 Invalid API key`. This was hard to catch because the test suite asserted the minted string format and authentication separately, producing intermittent failures that read like test flakiness rather than a code defect. The fix is two-part: `ApiKeyGuard` parses with an anchored regular expression (`/^sk_live_([0-9a-f]{16})_(.+)$/`) so any legacy base64url keys remain fully backward compatible, and newly minted secrets use a `hex` alphabet so an underscore can never appear in the secret. The general rule: when building a structured identifier, pick an alphabet that excludes the delimiter.
+
 Next module: event ingest — `RevenueEvent`, idempotency on
 `(serviceId, externalId)`, and `POST /events` authenticated by the key you just
 minted.

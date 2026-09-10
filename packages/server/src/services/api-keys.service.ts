@@ -15,7 +15,7 @@ export class ApiKeysService {
     await this.services.assertCanAccess(serviceId, userId);
 
     const publicId = randomBytes(8).toString('hex');
-    const secret = randomBytes(32).toString('base64url');
+    const secret = randomBytes(32).toString('hex');
     const plainKey = `sk_live_${publicId}_${secret}`;
 
     const secretHash = createHash('sha256').update(secret).digest('hex');

@@ -19,13 +19,13 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Missing x-api-key header');
     }
 
-    const parts = presented.split('_');
+    const match = /^sk_live_([0-9a-f]{16})_(.+)$/.exec(presented);
 
-    if (parts.length !== 4 || parts[0] !== 'sk' || parts[1] !== 'live') {
+    if (!match) {
       throw new UnauthorizedException('Invalid API key');
     }
 
-    const [, , publicId, secret] = parts;
+    const [, publicId, secret] = match;
 
     const key = await this.prisma.apiKey.findUnique({
       where: { publicId },
