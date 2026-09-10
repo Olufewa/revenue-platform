@@ -6,9 +6,6 @@ export class CreateServiceDto {
   @MaxLength(80)
   name!: string;
 
-  // The slug goes in URLs and in reports, so it is locked to lowercase
-  // letters, digits and hyphens. Asking for it explicitly is simpler than
-  // generating one and then having to explain what happened to the spaces.
   @IsString()
   @MinLength(2)
   @MaxLength(40)

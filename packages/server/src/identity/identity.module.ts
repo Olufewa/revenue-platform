@@ -7,10 +7,7 @@ import { AuthGuard } from './auth.guard.js';
 
 @Module({
   imports: [
-    // registerAsync, not register, because the secret comes from .env and the
-    // config has to be loaded before we can read it. getOrThrow means the app
-    // refuses to start without JWT_SECRET, rather than starting and signing
-    // every token with undefined.
+
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -22,9 +19,7 @@ import { AuthGuard } from './auth.guard.js';
   ],
   controllers: [IdentityController],
   providers: [IdentityService, AuthGuard],
-  // AuthGuard is exported so other modules can put @UseGuards(AuthGuard) on
-  // their routes without re-declaring it. JwtModule goes with it because that
-  // is where the guard gets JwtService from.
+
   exports: [JwtModule, AuthGuard],
 })
 export class IdentityModule {}

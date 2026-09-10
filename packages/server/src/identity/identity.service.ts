@@ -25,7 +25,6 @@ export class IdentityService {
       throw new ConflictException('That email is already registered');
     }
 
-    // 10 is the bcrypt cost. Higher = slower to crack and slower to log in.
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.prisma.user.create({
@@ -44,8 +43,6 @@ export class IdentityService {
       where: { email: dto.email },
     });
 
-    // Same message for "no such account" and "wrong password" on purpose.
-    // Different messages would let anyone discover which emails are registered.
     if (!user) {
       throw new UnauthorizedException('Email or password is incorrect');
     }
@@ -59,9 +56,6 @@ export class IdentityService {
       throw new UnauthorizedException('Email or password is incorrect');
     }
 
-    // No try/catch anywhere in here. Nest turns UnauthorizedException into a
-    // 401 by itself. A catch around this block would swallow that 401 and a
-    // wrong password would come back as a 500.
     const token = await this.jwt.signAsync({
       sub: user.id,
       email: user.email,
@@ -80,8 +74,6 @@ export class IdentityService {
     return this.publicUser(user);
   }
 
-  // One place that decides what a user looks like on the way out, so
-  // passwordHash can never leak into a response by accident.
   private publicUser(user: {
     id: string;
     email: string;

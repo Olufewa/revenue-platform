@@ -26,9 +26,6 @@ export class ServicesController {
     private readonly apiKeys: ApiKeysService,
   ) {}
 
-  // The machine route. It is declared before ':id' on purpose: Nest matches
-  // routes in the order they are written, so with ':id' first a GET to
-  // /services/whoami would be read as "the service with id 'whoami'".
   @Get('whoami')
   @UseGuards(ApiKeyGuard)
   whoami(@CurrentService() service: { id: string; slug: string; name: string }) {
@@ -53,9 +50,6 @@ export class ServicesController {
     return this.services.findOneFor(id, user.sub);
   }
 
-  // Deleting takes a service and every key on it out of the system, so it is
-  // the one route that is not merely owner-gated. Both guards run, in order:
-  // AuthGuard establishes who you are, RolesGuard checks what you may do.
   @Delete(':id')
   @HttpCode(204)
   @UseGuards(AuthGuard, RolesGuard)
@@ -80,7 +74,6 @@ export class ServicesController {
     return this.apiKeys.findAll(id, user.sub);
   }
 
-  // DELETE, but the row survives with revokedAt set. See ApiKeysService.
   @Delete(':id/keys/:keyId')
   @UseGuards(AuthGuard)
   revokeKey(

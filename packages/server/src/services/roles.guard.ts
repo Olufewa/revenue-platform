@@ -22,7 +22,6 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    // No @Roles on the route means any signed-in user may call it.
     if (!required || required.length === 0) return true;
 
     const request = context.switchToHttp().getRequest();
@@ -32,9 +31,6 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    // The role is read from the database, not from the token. A token lives
-    // for a day; if someone is demoted this morning their old token should
-    // stop working now, not tomorrow. One extra query is the price of that.
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: { role: true },

@@ -13,7 +13,7 @@ npx prisma generate                      # writes src/generated/prisma
 npm run start:dev
 ```
 
-Three routes should be mapped, then `API listening on http://localhost:3000`.
+Three routes should be mapped, then `API listening on http://localhost:3003`.
 
 ### Pin the Prisma CLI version
 
@@ -61,7 +61,7 @@ curl equivalents are here for when you want to see the raw exchange.
 
 ```bash
 # 1 - register
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3003/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"fewa@mtn.test","name":"Fewa","password":"supersecret1"}'
 ```
@@ -74,7 +74,7 @@ curl -X POST http://localhost:3000/auth/register \
 
 ```bash
 # 3 - login
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:3003/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"fewa@mtn.test","password":"supersecret1"}'
 ```
@@ -82,7 +82,7 @@ curl -X POST http://localhost:3000/auth/login \
 
 ```bash
 # 4 - wrong password
-curl -i -X POST http://localhost:3000/auth/login \
+curl -i -X POST http://localhost:3003/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"fewa@mtn.test","password":"wrongpassword"}'
 ```
@@ -92,7 +92,7 @@ that way.
 
 ```bash
 # 5 - unknown email
-curl -i -X POST http://localhost:3000/auth/login \
+curl -i -X POST http://localhost:3003/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"nobody@mtn.test","password":"supersecret1"}'
 ```
@@ -101,25 +101,25 @@ discover which emails are registered.
 
 ```bash
 # 6 - protected route
-curl http://localhost:3000/auth/me -H "Authorization: Bearer PASTE_TOKEN"
+curl http://localhost:3003/auth/me -H "Authorization: Bearer PASTE_TOKEN"
 ```
 → **200** and your user.
 
 ```bash
 # 7 - no token
-curl -i http://localhost:3000/auth/me
+curl -i http://localhost:3003/auth/me
 ```
 → **401**.
 
 ```bash
 # 8 - tampered token
-curl -i http://localhost:3000/auth/me -H "Authorization: Bearer PASTE_TOKENxxxx"
+curl -i http://localhost:3003/auth/me -H "Authorization: Bearer PASTE_TOKENxxxx"
 ```
 → **401**. This is what proves the token is *verified*, not merely decoded.
 
 ```bash
 # 9 - junk in the body
-curl -i -X POST http://localhost:3000/auth/register \
+curl -i -X POST http://localhost:3003/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"not-an-email","name":"x","password":"123","isAdmin":true}'
 ```

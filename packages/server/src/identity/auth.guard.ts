@@ -22,8 +22,6 @@ export class AuthGuard implements CanActivate {
     const token = header.slice('Bearer '.length);
 
     try {
-      // Returning true lets the request through. Before it does, it hangs the
-      // decoded token on the request so the route can read who this is.
       const payload = await this.jwt.verifyAsync(token);
       (request as any).user = payload;
       return true;

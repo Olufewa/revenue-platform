@@ -7,11 +7,9 @@ import { ApiKeyGuard } from './api-key.guard.js';
 import { RolesGuard } from './roles.guard.js';
 
 @Module({
-  // IdentityModule is imported for AuthGuard and the JwtService behind it.
-  // PrismaModule is global, so it does not need importing.
   imports: [IdentityModule],
   controllers: [ServicesController],
   providers: [ServicesService, ApiKeysService, ApiKeyGuard, RolesGuard],
-  exports: [ServicesService],
+  exports: [ServicesService, ApiKeyGuard],
 })
 export class ServicesModule {}

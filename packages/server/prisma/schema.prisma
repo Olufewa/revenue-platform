@@ -7,11 +7,15 @@ datasource db {
   provider = "postgresql"
 }
 
-// MEMBER can only see and change their own services.
-// ADMIN can see and change everyone's.
 enum Role {
   ADMIN
   MEMBER
+}
+
+enum EventStatus {
+  PENDING
+  POSTED
+  FAILED
 }
 
 model User {
@@ -26,7 +30,6 @@ model User {
   services Service[]
 }
 
-// An onboarded MTN product that will post revenue events.
 model Service {
   id        String   @id @default(cuid())
   slug      String   @unique
@@ -35,15 +38,11 @@ model Service {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner   User     @relation(fields: [ownerId], references: [id])
+  owner   User           @relation(fields: [ownerId], references: [id])
   apiKeys ApiKey[]
+  events  RevenueEvent[]
 }
 
-// The full key is never stored. What is stored is:
-//   publicId   - the lookup half, so a key can be found without knowing it
-//   secretHash - sha256 of the secret half, so a stolen database is not a
-//                stolen set of keys
-// The caller presents  sk_live_<publicId>_<secret>  and we rebuild the hash.
 model ApiKey {
   id         String    @id @default(cuid())
   publicId   String    @unique
@@ -57,4 +56,23 @@ model ApiKey {
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@index([serviceId])
+}
+
+model RevenueEvent {
+  id          String      @id @default(cuid())
+  serviceId   String
+  externalId  String
+  type        String
+  amountMinor BigInt
+  currency    String
+  occurredAt  DateTime
+  metadata    Json?
+  status      EventStatus @default(PENDING)
+  receivedAt  DateTime    @default(now())
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, externalId])
+  @@index([serviceId, occurredAt])
+  @@index([serviceId, status])
 }
