@@ -81,15 +81,19 @@ model RevenueEvent {
   occurredAt    DateTime
   metadata      Json?
   status        EventStatus @default(PENDING)
-  receivedAt    DateTime    @default(now())
-  failureReason String?
+  receivedAt      DateTime    @default(now())
+  failureReason   String?
+  reversesEventId String?
 
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  entries Entry[]
+  service    Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  entries    Entry[]
+  reverses   RevenueEvent?  @relation("EventReversals", fields: [reversesEventId], references: [id])
+  reversedBy RevenueEvent[] @relation("EventReversals")
 
   @@unique([serviceId, externalId])
   @@index([serviceId, occurredAt])
   @@index([serviceId, status])
+  @@index([reversesEventId])
 }
 
 model Account {

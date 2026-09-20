@@ -38,4 +38,10 @@ export class CreateEventDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  reversesExternalId?: string;
 }

@@ -8,6 +8,7 @@ import { ServicesService } from '../services/services.service.js';
 import { allocate, type PostingLine } from './allocation.js';
 import { CreatePostingRuleDto } from './dto/create-posting-rule.dto.js';
 import { ListEntriesDto } from './dto/list-entries.dto.js';
+import { EventNotPendingError } from './event-not-pending.error.js';
 
 @Injectable()
 export class LedgerService {
@@ -100,6 +101,7 @@ export class LedgerService {
     const pendingEvents = await this.prisma.revenueEvent.findMany({
       where: { serviceId, status: 'PENDING' },
       orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
+      take: 500,
     });
 
     const accounts = await this.prisma.account.findMany();
@@ -131,10 +133,9 @@ export class LedgerService {
             });
 
             if (updated.count === 0) {
-              skipped++;
-            } else {
-              failed++;
+              throw new EventNotPendingError();
             }
+            failed++;
             return;
           }
 
@@ -172,13 +173,26 @@ export class LedgerService {
           });
 
           if (updated.count === 0) {
-            throw new Error('Event was not in PENDING status');
+            throw new EventNotPendingError();
           }
 
           posted++;
         });
-      } catch {
-        skipped++;
+      } catch (error) {
+        if (error instanceof EventNotPendingError) {
+          skipped++;
+        } else {
+          const reason =
+            error instanceof Error ? error.message : 'Unknown posting error';
+          await this.prisma.revenueEvent.updateMany({
+            where: { id: event.id, status: 'PENDING' },
+            data: {
+              status: 'FAILED',
+              failureReason: reason,
+            },
+          });
+          failed++;
+        }
       }
     }
 

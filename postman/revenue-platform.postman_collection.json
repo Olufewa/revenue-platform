@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "MTN Revenue Platform",
-    "description": "Comprehensive API collection for the MTN Revenue Platform.\n\nCovers all currently implemented modules:\n1. Identity & Authentication (register, login, me, validation and conflict checks)\n2. Service Onboarding & API Keys (services CRUD, minting keys, whoami, key revocation)\n3. Revenue Events (event ingest, idempotency deduplication, event queries, dashboard views, and summary aggregates)\n4. Double-Entry Ledger & Posting Rules (chart of accounts, fractional posting rules, posting pending events, entries cursor paging, derived balances, and failure handling)\n\n### How to run:\n1. Start the server: in `packages/server`, run `npm run start:dev`\n2. In Postman, click **Import** and select this file (`postman/revenue-platform.postman_collection.json`)\n3. Click **Run collection** to run the entire suite automatically from top to bottom.\nAll tokens, service IDs, and API keys are captured and passed forward via collection variables automatically!",
+    "description": "Comprehensive API collection for the MTN Revenue Platform.\n\nCovers all currently implemented modules:\n1. Identity & Authentication (register, login, me, validation and conflict checks)\n2. Service Onboarding & API Keys (services CRUD, minting keys, whoami, key revocation)\n3. Revenue Events (event ingest, idempotency deduplication, event queries, dashboard views, and summary aggregates)\n4. Double-Entry Ledger & Posting Rules (chart of accounts, fractional posting rules, posting pending events, entries cursor paging, derived balances, and failure handling)\n5. Adjustments & Refunds (immutable reversals, over-refund prevention, adjustments query, and refund posting)\n\n### How to run:\n1. Start the server: in `packages/server`, run `npm run start:dev`\n2. In Postman, click **Import** and select this file (`postman/revenue-platform.postman_collection.json`)\n3. Click **Run collection** to run the entire suite automatically from top to bottom.\nAll tokens, service IDs, and API keys are captured and passed forward via collection variables automatically!",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -82,6 +82,26 @@
     },
     {
       "key": "unconfiguredEventId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refundOriginalExternalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refundOriginalEventId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refundExternalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refundEventId",
       "value": "",
       "type": "string"
     }
@@ -1370,6 +1390,379 @@
                 "services",
                 "{{serviceId}}",
                 "balances"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 · Adjustments & Refunds",
+      "item": [
+        {
+          "name": "01 · Create Posting Rule for bundle.refunded",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Rule for bundle.refunded created', () => {",
+                  "    pm.expect(json.eventType).to.eql('bundle.refunded');",
+                  "    pm.expect(json.lines.length).to.eql(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"bundle.refunded\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00.000Z\",\n  \"lines\": [\n    { \"accountCode\": \"deferred_revenue\", \"direction\": \"DEBIT\", \"numerator\": 1000, \"denominator\": 1075 },\n    { \"accountCode\": \"vat_payable\", \"direction\": \"DEBIT\", \"numerator\": 75, \"denominator\": 1075 },\n    { \"accountCode\": \"cash\", \"direction\": \"CREDIT\", \"numerator\": 1, \"denominator\": 1 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/posting-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "posting-rules"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02 · Ingest ₦3,500 Bundle to Refund",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.collectionVariables.set('refundOriginalExternalId', `bundle-orig-${stamp}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202 Accepted', () => {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('refundOriginalEventId', json.event.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"{{refundOriginalExternalId}}\",\n  \"type\": \"bundle.purchased\",\n  \"amountMinor\": 350000,\n  \"currency\": \"NGN\",\n  \"occurredAt\": \"2026-09-16T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 · Post Original Bundle Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', () => {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Posts at least 1 event', () => {",
+                  "    pm.expect(json.posted).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/events/post",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "events",
+                "post"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 · Ingest Half Refund (₦1,750)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.collectionVariables.set('refundExternalId', `bundle-refund-${stamp}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202 Accepted', () => {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('refundEventId', json.event.id);",
+                  "pm.test('Reversal references original event id', () => {",
+                  "    pm.expect(json.event.reversesEventId).to.eql(pm.collectionVariables.get('refundOriginalEventId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"{{refundExternalId}}\",\n  \"type\": \"bundle.refunded\",\n  \"amountMinor\": 175000,\n  \"currency\": \"NGN\",\n  \"occurredAt\": \"2026-09-16T11:00:00.000Z\",\n  \"reversesExternalId\": \"{{refundOriginalExternalId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 · Post Refund Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', () => {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Refund event posted successfully', () => {",
+                  "    pm.expect(json.posted).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/events/post",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "events",
+                "post"
+              ]
+            }
+          }
+        },
+        {
+          "name": "06 · Get Event Adjustments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns original, reversed and remaining amounts', () => {",
+                  "    pm.expect(json.originalAmountMinor).to.eql('350000');",
+                  "    pm.expect(json.reversedMinor).to.eql('175000');",
+                  "    pm.expect(json.remainingMinor).to.eql('175000');",
+                  "    pm.expect(json.adjustments).to.be.an('array');",
+                  "    pm.expect(json.adjustments.length).to.eql(1);",
+                  "    pm.expect(json.adjustments[0].id).to.eql(pm.collectionVariables.get('refundEventId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/events/{{refundOriginalEventId}}/adjustments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "events",
+                "{{refundOriginalEventId}}",
+                "adjustments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "07 · Check Balances After Half Refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Balances returned as array', () => {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/balances",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "balances"
+              ]
+            }
+          }
+        },
+        {
+          "name": "08 · Attempt Over-Refund (Assert 409 Conflict)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', () => {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Error message mentions remaining refundable amount', () => {",
+                  "    pm.expect(json.message).to.include('exceeds remaining refundable amount');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"over-refund-{{$timestamp}}\",\n  \"type\": \"bundle.refunded\",\n  \"amountMinor\": 200000,\n  \"currency\": \"NGN\",\n  \"occurredAt\": \"2026-09-16T12:00:00.000Z\",\n  \"reversesExternalId\": \"{{refundOriginalExternalId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
               ]
             }
           }

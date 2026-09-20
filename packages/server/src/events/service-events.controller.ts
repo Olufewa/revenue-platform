@@ -9,6 +9,23 @@ import { ListEventsDto } from './dto/list-events.dto.js';
 export class ServiceEventsController {
   constructor(private readonly events: EventsService) {}
 
+  @Get('summary')
+  summary(
+    @Param('serviceId') serviceId: string,
+    @CurrentUser() user: { sub: string },
+  ) {
+    return this.events.summaryForUser(serviceId, user.sub);
+  }
+
+  @Get(':eventId/adjustments')
+  adjustments(
+    @Param('serviceId') serviceId: string,
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: { sub: string },
+  ) {
+    return this.events.getAdjustmentsForUser(serviceId, user.sub, eventId);
+  }
+
   @Get()
   list(
     @Param('serviceId') serviceId: string,
@@ -16,13 +33,5 @@ export class ServiceEventsController {
     @CurrentUser() user: { sub: string },
   ) {
     return this.events.listForUser(serviceId, user.sub, query);
-  }
-
-  @Get('summary')
-  summary(
-    @Param('serviceId') serviceId: string,
-    @CurrentUser() user: { sub: string },
-  ) {
-    return this.events.summaryForUser(serviceId, user.sub);
   }
 }

@@ -145,6 +145,9 @@ seam is already correct: ingest returns `202 Accepted` and writes a `PENDING` ro
 posts inline. When a queue worker is added later, it simply calls the same `postEvents`
 service method.
 
+Each posting run caps its fetch at 500 `PENDING` events so a single call cannot grow
+unbounded or time out under high ingest volume.
+
 ### 9 · Atomic status update: the check is a race, the write is the guarantee
 
 To prevent race conditions where two concurrent post runs process the same event:
@@ -155,13 +158,18 @@ const updated = await tx.revenueEvent.updateMany({
   data: { status: 'POSTED', failureReason: null },
 });
 if (updated.count === 0) {
-  throw new Error('Event was not in PENDING status');
+  throw new EventNotPendingError();
 }
 ```
 
 Reading `event.status` first is a race. Updating with `where: { id, status: 'PENDING' }`
-ensures only one worker wins the write lock; any runner seeing `count === 0` rolls back
-and counts the event as `skipped`.
+ensures only one worker wins the write lock; any runner seeing `count === 0` throws
+`EventNotPendingError`, rolls back the transaction, and counts the event as `skipped`.
+
+Crucially, only a lost race is treated as a skip. Any other error (e.g. malformed rule,
+database constraint failure) is caught outside the rolled-back transaction, updates the
+event to `FAILED` with the error message as `failureReason`, and increments `failed`.
+The event is quarantined with a reason, never dropped or left silently `PENDING`.
 
 ### 10 · Append-only ledger
 

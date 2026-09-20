@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ServicesService } from '../services/services.service.js';
@@ -16,6 +21,7 @@ type EventRow = {
   metadata: unknown;
   status: string;
   receivedAt: Date;
+  reversesEventId?: string | null;
 };
 
 @Injectable()
@@ -36,6 +42,46 @@ export class EventsService {
       return { duplicate: true, event: this.publicEvent(existing) };
     }
 
+    let reversesEventId: string | null = null;
+
+    if (dto.reversesExternalId) {
+      const original = await this.prisma.revenueEvent.findUnique({
+        where: {
+          serviceId_externalId: {
+            serviceId,
+            externalId: dto.reversesExternalId,
+          },
+        },
+      });
+
+      if (!original) {
+        throw new NotFoundException('No such event on this service');
+      }
+
+      if (dto.currency !== original.currency) {
+        throw new BadRequestException(
+          'Reversal currency does not match original event currency',
+        );
+      }
+
+      const existingReversals = await this.prisma.revenueEvent.aggregate({
+        where: { reversesEventId: original.id },
+        _sum: { amountMinor: true },
+      });
+
+      const alreadyReversed = existingReversals._sum.amountMinor ?? 0n;
+      const requestedAmount = BigInt(dto.amountMinor);
+      const remaining = original.amountMinor - alreadyReversed;
+
+      if (alreadyReversed + requestedAmount > original.amountMinor) {
+        throw new ConflictException(
+          `Reversal amount exceeds remaining refundable amount (${remaining}) on original event`,
+        );
+      }
+
+      reversesEventId = original.id;
+    }
+
     try {
       const created = await this.prisma.revenueEvent.create({
         data: {
@@ -46,6 +92,7 @@ export class EventsService {
           currency: dto.currency,
           occurredAt: new Date(dto.occurredAt),
           metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+          reversesEventId,
         },
       });
 
@@ -116,6 +163,43 @@ export class EventsService {
     }));
   }
 
+  async getAdjustments(serviceId: string, eventId: string) {
+    const original = await this.prisma.revenueEvent.findFirst({
+      where: { id: eventId, serviceId },
+    });
+
+    if (!original) {
+      throw new NotFoundException('No such event on this service');
+    }
+
+    const adjustments = await this.prisma.revenueEvent.findMany({
+      where: { reversesEventId: eventId, serviceId },
+      orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
+    });
+
+    const reversedMinor = adjustments.reduce(
+      (sum, adj) => sum + adj.amountMinor,
+      0n,
+    );
+    const remainingMinor = original.amountMinor - reversedMinor;
+
+    return {
+      originalAmountMinor: original.amountMinor.toString(),
+      reversedMinor: reversedMinor.toString(),
+      remainingMinor: remainingMinor.toString(),
+      adjustments: adjustments.map((adj) => this.publicEvent(adj)),
+    };
+  }
+
+  async getAdjustmentsForUser(
+    serviceId: string,
+    userId: string,
+    eventId: string,
+  ) {
+    await this.services.assertCanAccess(serviceId, userId);
+    return this.getAdjustments(serviceId, eventId);
+  }
+
   private publicEvent(event: EventRow) {
     return {
       id: event.id,
@@ -127,6 +211,7 @@ export class EventsService {
       metadata: event.metadata ?? null,
       status: event.status,
       receivedAt: event.receivedAt,
+      reversesEventId: event.reversesEventId ?? null,
     };
   }
 }
