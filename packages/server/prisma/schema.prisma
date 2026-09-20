@@ -18,6 +18,17 @@ enum EventStatus {
   FAILED
 }
 
+enum AccountType {
+  ASSET
+  LIABILITY
+  REVENUE
+}
+
+enum EntryDirection {
+  DEBIT
+  CREDIT
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -38,9 +49,11 @@ model Service {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner   User           @relation(fields: [ownerId], references: [id])
-  apiKeys ApiKey[]
-  events  RevenueEvent[]
+  owner        User           @relation(fields: [ownerId], references: [id])
+  apiKeys      ApiKey[]
+  events       RevenueEvent[]
+  postingRules PostingRule[]
+  entries      Entry[]
 }
 
 model ApiKey {
@@ -59,20 +72,64 @@ model ApiKey {
 }
 
 model RevenueEvent {
-  id          String      @id @default(cuid())
-  serviceId   String
-  externalId  String
-  type        String
-  amountMinor BigInt
-  currency    String
-  occurredAt  DateTime
-  metadata    Json?
-  status      EventStatus @default(PENDING)
-  receivedAt  DateTime    @default(now())
+  id            String      @id @default(cuid())
+  serviceId     String
+  externalId    String
+  type          String
+  amountMinor   BigInt
+  currency      String
+  occurredAt    DateTime
+  metadata      Json?
+  status        EventStatus @default(PENDING)
+  receivedAt    DateTime    @default(now())
+  failureReason String?
 
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  entries Entry[]
 
   @@unique([serviceId, externalId])
   @@index([serviceId, occurredAt])
   @@index([serviceId, status])
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  code      String      @unique
+  name      String
+  type      AccountType
+  createdAt DateTime    @default(now())
+
+  entries Entry[]
+}
+
+model PostingRule {
+  id            String   @id @default(cuid())
+  serviceId     String
+  eventType     String
+  effectiveFrom DateTime
+  lines         Json
+  createdAt     DateTime @default(now())
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId, eventType, effectiveFrom])
+}
+
+model Entry {
+  id          String         @id @default(cuid())
+  eventId     String
+  serviceId   String
+  accountId   String
+  direction   EntryDirection
+  amountMinor BigInt
+  currency    String
+  occurredAt  DateTime
+  bookedAt    DateTime       @default(now())
+
+  event   RevenueEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  service Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  account Account      @relation(fields: [accountId], references: [id])
+
+  @@index([serviceId, occurredAt])
+  @@index([eventId])
 }
