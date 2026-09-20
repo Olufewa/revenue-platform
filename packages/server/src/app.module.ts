@@ -5,6 +5,7 @@ import { IdentityModule } from './identity/identity.module.js';
 import { ServicesModule } from './services/services.module.js';
 import { EventsModule } from './events/events.module.js';
 import { LedgerModule } from './ledger/ledger.module.js';
+import { MetricsModule } from './metrics/metrics.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { LedgerModule } from './ledger/ledger.module.js';
     ServicesModule,
     EventsModule,
     LedgerModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}

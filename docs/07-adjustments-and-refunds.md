@@ -71,6 +71,30 @@ If the revenue had already been recognized (e.g. data consumed), the refund woul
 the prior period's earned revenue is never retroactively rewritten, while the refund is
 explicitly visible as a separate revenue deduction in the current period.
 
+### 5 · Locking the original: why check-then-write is a race without a row lock
+
+The check-then-write is a race whenever nothing enforces the rule at write time.
+In module 4, idempotency could lean on a unique database constraint (`serviceId, externalId`).
+A running total cannot be enforced with a unique constraint. If two concurrent refunds
+for the same original event arrive at the same millisecond, both would read the same
+historical sum of reversals, both would pass the remaining-amount check, and together
+they would refund more than the original amount.
+
+To close this race, `EventsService.ingest` wraps the check and the create inside a single
+`prisma.$transaction` and takes an explicit row lock on the original event first:
+
+```sql
+SELECT id FROM "RevenueEvent" WHERE id = ${original.id} FOR UPDATE
+```
+
+Concurrent refunds of the same original now queue behind the lock instead of racing.
+The second transaction only reads the sum of reversals after the first transaction has
+committed its new refund row. Refunds of different original events remain completely
+unaffected.
+
+This same concurrency pattern returns in the shared data pool module, where preventing
+concurrent over-consumption from a shared quota is the core problem.
+
 ---
 
 ## Before / After: Half Refund of the ₦3,500 Bundle

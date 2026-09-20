@@ -19,7 +19,9 @@ packages/server/          the API
   src/prisma/             PrismaService, wired with the pg driver adapter
   src/identity/           register / login / me
   src/services/           services, API keys, roles
-  src/events/             revenue event ingest
+  src/events/             revenue event ingest and adjustments
+  src/ledger/             accounts, posting rules, double-entry ledger
+  src/metrics/            daily aggregates, metrics series, operational health
 docs/                     one guide per module - the code carries no comments
 postman/                  importable request collection with assertions
 ```
@@ -49,10 +51,19 @@ them is being written.
 | 2 | Identity — register / login / me | done |
 | 3 | Service onboarding — `Service`, `ApiKey`, roles | done |
 | 4 | Event ingest — `RevenueEvent`, idempotency | done |
-| 5 | Posting rules — `Account`, `Entry`, double-entry ledger | next |
-| 6 | Adjustments and refunds | |
-| 7 | Aggregates and dashboard | |
-| 8 | Shared data pool, then USSD | |
+| 5 | Posting rules — `Account`, `Entry`, double-entry ledger | done |
+| 6 | Adjustments and refunds | done |
+| 7 | Aggregates and dashboard | done |
+| 8 | Shared data pool, then USSD | next |
+
+## Concepts
+
+The codebase carries no comments — every architectural decision and financial rule
+is documented in detail in `docs/`:
+
+- **[Posting Rules & Ledger](docs/06-posting-rules-and-ledger.md)**: Why products report raw facts while the platform decides financial meaning; why rules are immutable dated rows using explicit fractions (handling inclusive Nigerian VAT to the exact kobo); half-up integer math; and why balances are derived rather than stored.
+- **[Adjustments & Refunds](docs/07-adjustments-and-refunds.md)**: Why nothing is ever edited or deleted; why refunds are new events linking to the original; row-locking concurrency controls; and why refunds unwind liabilities without modifying past revenue.
+- **[Daily Aggregates & Metrics](docs/08-aggregates-and-metrics.md)**: Why the dashboard reads precomputed rollups instead of running heavy aggregations over raw ledger entries; why aggregates are disposable; and why operational health numbers matter as much as revenue numbers.
 
 ## API
 
@@ -83,11 +94,32 @@ All routes are under `http://localhost:3003`.
 
 | Method | Route | Auth | Returns |
 |---|---|---|---|
-| POST | `/events` | `x-api-key` | 202, idempotent on `externalId` |
+| POST | `/events` | `x-api-key` | 202, idempotent on `externalId`, supports `reversesExternalId` |
 | GET | `/events` | `x-api-key` | 200 paged events for that service |
 | GET | `/events/:id` | `x-api-key` | 200, 404 outside the key's service |
 | GET | `/services/:id/events` | Bearer | 200 the human view |
 | GET | `/services/:id/events/summary` | Bearer | 200 totals by currency and status |
+| GET | `/services/:id/events/:eventId/adjustments` | Bearer | 200 list of reversals, original, reversed and remaining amounts |
+
+### Double-entry ledger
+
+| Method | Route | Auth | Returns |
+|---|---|---|---|
+| GET | `/accounts` | Bearer | 200 chart of accounts |
+| POST | `/services/:id/posting-rules` | Bearer | 201 immutable dated posting rule |
+| GET | `/services/:id/posting-rules` | Bearer | 200 rules for service, newest `effectiveFrom` first |
+| POST | `/services/:id/events/post` | Bearer | 200/201 `{ posted, failed, skipped }` counts |
+| GET | `/services/:id/entries` | Bearer | 200 cursor-paged ledger entries |
+| GET | `/services/:id/balances` | Bearer | 200 derived balances per account per currency |
+
+### Daily aggregates & metrics
+
+| Method | Route | Auth | Returns |
+|---|---|---|---|
+| POST | `/services/:id/aggregates/rebuild` | Bearer | 200/201 `{ days, rows }` recomputed from entries |
+| GET | `/services/:id/metrics?from=&to=` | Bearer | 200 daily series per account/currency + totals |
+| GET | `/services/:id/health` | Bearer | 200 operational telemetry (lag, counts, refund rate) |
+| GET | `/metrics/overview?from=&to=` | Bearer + ADMIN | 200 totals across all services, one row each |
 
 Amounts are integers of the smallest currency unit — `250000` is ₦2,500.00 in
 kobo. They are accepted as numbers and returned as strings so no client can turn

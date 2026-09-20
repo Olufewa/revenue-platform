@@ -42,47 +42,64 @@ export class EventsService {
       return { duplicate: true, event: this.publicEvent(existing) };
     }
 
-    let reversesEventId: string | null = null;
-
-    if (dto.reversesExternalId) {
-      const original = await this.prisma.revenueEvent.findUnique({
-        where: {
-          serviceId_externalId: {
-            serviceId,
-            externalId: dto.reversesExternalId,
-          },
-        },
-      });
-
-      if (!original) {
-        throw new NotFoundException('No such event on this service');
-      }
-
-      if (dto.currency !== original.currency) {
-        throw new BadRequestException(
-          'Reversal currency does not match original event currency',
-        );
-      }
-
-      const existingReversals = await this.prisma.revenueEvent.aggregate({
-        where: { reversesEventId: original.id },
-        _sum: { amountMinor: true },
-      });
-
-      const alreadyReversed = existingReversals._sum.amountMinor ?? 0n;
-      const requestedAmount = BigInt(dto.amountMinor);
-      const remaining = original.amountMinor - alreadyReversed;
-
-      if (alreadyReversed + requestedAmount > original.amountMinor) {
-        throw new ConflictException(
-          `Reversal amount exceeds remaining refundable amount (${remaining}) on original event`,
-        );
-      }
-
-      reversesEventId = original.id;
-    }
-
     try {
+      const reversesExternalId = dto.reversesExternalId;
+
+      if (reversesExternalId) {
+        const created = await this.prisma.$transaction(async (tx) => {
+          const original = await tx.revenueEvent.findUnique({
+            where: {
+              serviceId_externalId: {
+                serviceId,
+                externalId: reversesExternalId,
+              },
+            },
+          });
+
+          if (!original) {
+            throw new NotFoundException('No such event on this service');
+          }
+
+          if (dto.currency !== original.currency) {
+            throw new BadRequestException(
+              'Reversal currency does not match original event currency',
+            );
+          }
+
+          await tx.$queryRaw`SELECT id FROM "RevenueEvent" WHERE id = ${original.id} FOR UPDATE`;
+
+          const existingReversals = await tx.revenueEvent.aggregate({
+            where: { reversesEventId: original.id },
+            _sum: { amountMinor: true },
+          });
+
+          const alreadyReversed = existingReversals._sum.amountMinor ?? 0n;
+          const requestedAmount = BigInt(dto.amountMinor);
+          const remaining = original.amountMinor - alreadyReversed;
+
+          if (alreadyReversed + requestedAmount > original.amountMinor) {
+            throw new ConflictException(
+              `Reversal amount exceeds remaining refundable amount (${remaining}) on original event`,
+            );
+          }
+
+          return tx.revenueEvent.create({
+            data: {
+              serviceId,
+              externalId: dto.externalId,
+              type: dto.type,
+              amountMinor: BigInt(dto.amountMinor),
+              currency: dto.currency,
+              occurredAt: new Date(dto.occurredAt),
+              metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+              reversesEventId: original.id,
+            },
+          });
+        });
+
+        return { duplicate: false, event: this.publicEvent(created) };
+      }
+
       const created = await this.prisma.revenueEvent.create({
         data: {
           serviceId,
@@ -92,7 +109,6 @@ export class EventsService {
           currency: dto.currency,
           occurredAt: new Date(dto.occurredAt),
           metadata: dto.metadata as Prisma.InputJsonValue | undefined,
-          reversesEventId,
         },
       });
 

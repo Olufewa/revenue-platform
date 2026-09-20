@@ -49,11 +49,12 @@ model Service {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner        User           @relation(fields: [ownerId], references: [id])
-  apiKeys      ApiKey[]
-  events       RevenueEvent[]
-  postingRules PostingRule[]
-  entries      Entry[]
+  owner           User             @relation(fields: [ownerId], references: [id])
+  apiKeys         ApiKey[]
+  events          RevenueEvent[]
+  postingRules    PostingRule[]
+  entries         Entry[]
+  dailyAggregates DailyAggregate[]
 }
 
 model ApiKey {
@@ -72,15 +73,15 @@ model ApiKey {
 }
 
 model RevenueEvent {
-  id            String      @id @default(cuid())
-  serviceId     String
-  externalId    String
-  type          String
-  amountMinor   BigInt
-  currency      String
-  occurredAt    DateTime
-  metadata      Json?
-  status        EventStatus @default(PENDING)
+  id              String      @id @default(cuid())
+  serviceId       String
+  externalId      String
+  type            String
+  amountMinor     BigInt
+  currency        String
+  occurredAt      DateTime
+  metadata        Json?
+  status          EventStatus @default(PENDING)
   receivedAt      DateTime    @default(now())
   failureReason   String?
   reversesEventId String?
@@ -103,7 +104,8 @@ model Account {
   type      AccountType
   createdAt DateTime    @default(now())
 
-  entries Entry[]
+  entries         Entry[]
+  dailyAggregates DailyAggregate[]
 }
 
 model PostingRule {
@@ -136,4 +138,21 @@ model Entry {
 
   @@index([serviceId, occurredAt])
   @@index([eventId])
+}
+
+model DailyAggregate {
+  id          String   @id @default(cuid())
+  serviceId   String
+  accountId   String
+  currency    String
+  day         DateTime @db.Date
+  debitMinor  BigInt
+  creditMinor BigInt
+  entryCount  Int
+  updatedAt   DateTime @updatedAt
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@unique([serviceId, accountId, currency, day])
 }

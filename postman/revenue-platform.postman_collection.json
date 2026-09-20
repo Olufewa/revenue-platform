@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "MTN Revenue Platform",
-    "description": "Comprehensive API collection for the MTN Revenue Platform.\n\nCovers all currently implemented modules:\n1. Identity & Authentication (register, login, me, validation and conflict checks)\n2. Service Onboarding & API Keys (services CRUD, minting keys, whoami, key revocation)\n3. Revenue Events (event ingest, idempotency deduplication, event queries, dashboard views, and summary aggregates)\n4. Double-Entry Ledger & Posting Rules (chart of accounts, fractional posting rules, posting pending events, entries cursor paging, derived balances, and failure handling)\n5. Adjustments & Refunds (immutable reversals, over-refund prevention, adjustments query, and refund posting)\n\n### How to run:\n1. Start the server: in `packages/server`, run `npm run start:dev`\n2. In Postman, click **Import** and select this file (`postman/revenue-platform.postman_collection.json`)\n3. Click **Run collection** to run the entire suite automatically from top to bottom.\nAll tokens, service IDs, and API keys are captured and passed forward via collection variables automatically!",
+    "description": "Comprehensive API collection for the MTN Revenue Platform.\n\nCovers all currently implemented modules:\n1. Identity & Authentication (register, login, me, validation and conflict checks)\n2. Service Onboarding & API Keys (services CRUD, minting keys, whoami, key revocation)\n3. Revenue Events (event ingest, idempotency deduplication, event queries, dashboard views, and summary aggregates)\n4. Double-Entry Ledger & Posting Rules (chart of accounts, fractional posting rules, posting pending events, entries cursor paging, derived balances, and failure handling)\n5. Adjustments & Refunds (immutable reversals, over-refund prevention, adjustments query, and refund posting)\n6. Daily Aggregates & Metrics (rollups rebuild, daily metrics series and totals, health telemetry, and admin cross-service overview)\n\n### How to run:\n1. Start the server: in `packages/server`, run `npm run start:dev`\n2. In Postman, click **Import** and select this file (`postman/revenue-platform.postman_collection.json`)\n3. Click **Run collection** to run the entire suite automatically from top to bottom.\nAll tokens, service IDs, and API keys are captured and passed forward via collection variables automatically!",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -1763,6 +1763,157 @@
               ],
               "path": [
                 "events"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6 · Daily Aggregates & Metrics",
+      "item": [
+        {
+          "name": "01 · Rebuild Aggregates for Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', () => {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns days and rows counts', () => {",
+                  "    pm.expect(json.days).to.be.a('number');",
+                  "    pm.expect(json.rows).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/aggregates/rebuild",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "aggregates",
+                "rebuild"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02 · Get Service Metrics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns series and totals arrays', () => {",
+                  "    pm.expect(json.series).to.be.an('array');",
+                  "    pm.expect(json.totals).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "metrics"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 · Get Service Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns operational health telemetry', () => {",
+                  "    pm.expect(json.pending).to.be.a('number');",
+                  "    pm.expect(json.posted).to.be.a('number');",
+                  "    pm.expect(json.failed).to.be.a('number');",
+                  "    pm.expect(json.failedSamples).to.be.an('array');",
+                  "    pm.expect(json.ingestionLagSeconds).to.be.a('number');",
+                  "    pm.expect(json.refundRateBps).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 · Get Admin Metrics Overview (Forbidden for Member)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403 Forbidden for non-admin', () => {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/metrics/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics",
+                "overview"
               ]
             }
           }
