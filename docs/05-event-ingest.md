@@ -139,7 +139,7 @@ requests shifts everything down and page 3 shows a row you already saw on page 2
 
 ## Checks
 
-Import `postman/collections/revenue-platform-events.postman_collection.json` and
+Import `postman/revenue-platform.postman_collection.json` and
 hit **Run**. It creates a user, a service and a key, posts an event, posts the
 exact same event twice more to prove the count does not move, rejects a float
 amount, rejects a bad currency, reads the event back, confirms another service's

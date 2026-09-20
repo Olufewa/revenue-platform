@@ -55,7 +55,7 @@ root. Once you are back on 7.10.0 those are orphaned and safe to delete.
 
 ## The checks
 
-Import `postman/collections/revenue-platform.postman_collection.json` into Postman
+Import `postman/revenue-platform.postman_collection.json` into Postman
 and hit **Run** — every check below is in there with an assertion attached. The
 curl equivalents are here for when you want to see the raw exchange.
 

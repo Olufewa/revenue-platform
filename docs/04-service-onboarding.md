@@ -120,7 +120,7 @@ service?". Every route calls it, so no route can forget to.
 
 ## Checks
 
-Import `postman/collections/revenue-platform-services.postman_collection.json`
+Import `postman/revenue-platform.postman_collection.json`
 and hit **Run**. In order it: logs in, creates a service, rejects a duplicate
 slug, mints a key, calls `/services/whoami` with it, confirms the key list never
 contains the secret, revokes the key, and confirms the revoked key now returns

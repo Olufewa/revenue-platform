@@ -21,7 +21,7 @@ packages/server/          the API
   src/services/           services, API keys, roles
   src/events/             revenue event ingest
 docs/                     one guide per module - the code carries no comments
-postman/collections/      importable request collection with assertions
+postman/                  importable request collection with assertions
 ```
 
 ## Getting started

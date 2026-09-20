@@ -1,0 +1,997 @@
+{
+  "info": {
+    "name": "MTN Revenue Platform",
+    "description": "Comprehensive API collection for the MTN Revenue Platform.\n\nCovers all currently implemented modules:\n1. Identity & Authentication (register, login, me, validation and conflict checks)\n2. Service Onboarding & API Keys (services CRUD, minting keys, whoami, key revocation)\n3. Revenue Events (event ingest, idempotency deduplication, event queries, dashboard views, and summary aggregates)\n\n### How to run:\n1. Start the server: in `packages/server`, run `npm run start:dev`\n2. In Postman, click **Import** and select this file (`postman/revenue-platform.postman_collection.json`)\n3. Click **Run collection** to run the entire suite automatically from top to bottom.\nAll tokens, service IDs, and API keys are captured and passed forward via collection variables automatically!",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3003",
+      "type": "string"
+    },
+    {
+      "key": "testEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testPassword",
+      "value": "Password123!",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "serviceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "serviceSlug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "apiKeyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ingestApiKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ingestApiKeyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "externalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Identity & Authentication",
+      "item": [
+        {
+          "name": "01 · Register User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.collectionVariables.set('testEmail', `user_${stamp}@mtn.test`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('User created without exposing passwordHash', () => {",
+                  "    pm.expect(json.id).to.be.a('string');",
+                  "    pm.expect(json.email).to.eql(pm.collectionVariables.get('testEmail'));",
+                  "    pm.expect(json.name).to.eql('Jane Doe');",
+                  "    pm.expect(json.passwordHash).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"name\": \"Jane Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02 · Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Access token received and saved', () => {",
+                  "    pm.expect(json.access_token).to.be.a('string');",
+                  "    pm.collectionVariables.set('accessToken', json.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 · Get Current User (/auth/me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns current user details', () => {",
+                  "    pm.expect(json.email).to.eql(pm.collectionVariables.get('testEmail'));",
+                  "    pm.expect(json.passwordHash).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 · Register Duplicate Email (Expect 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', () => {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"name\": \"Duplicate User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 · Login With Wrong Password (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', () => {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"incorrectpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Services & API Keys",
+      "item": [
+        {
+          "name": "01 · Create Service",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.collectionVariables.set('serviceSlug', `airtime-svc-${stamp}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Service created with valid ID', () => {",
+                  "    pm.expect(json.id).to.be.a('string');",
+                  "    pm.expect(json.slug).to.eql(pm.collectionVariables.get('serviceSlug'));",
+                  "    pm.collectionVariables.set('serviceId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"MTN Airtime Service\",\n  \"slug\": \"{{serviceSlug}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02 · List Services",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Service list contains newly created service', () => {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    const found = json.some(s => s.id === pm.collectionVariables.get('serviceId'));",
+                  "    pm.expect(found).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 · Get Service by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns correct service details', () => {",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('serviceId'));",
+                  "    pm.expect(json.slug).to.eql(pm.collectionVariables.get('serviceSlug'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 · Mint API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Full secret key returned once and saved', () => {",
+                  "    pm.expect(json.key).to.be.a('string');",
+                  "    pm.expect(json.key).to.match(/^sk_live_[a-f0-9]{16}_[a-f0-9]{64}$/);",
+                  "    pm.collectionVariables.set('apiKey', json.key);",
+                  "    pm.collectionVariables.set('apiKeyId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Key for Revocation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "keys"
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 · List API Keys",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Keys list displays metadata and never exposes secret', () => {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    json.forEach(k => {",
+                  "        pm.expect(k.key).to.be.undefined;",
+                  "        pm.expect(k.secretHash).to.be.undefined;",
+                  "        pm.expect(k.prefix).to.be.a('string');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "keys"
+              ]
+            }
+          }
+        },
+        {
+          "name": "06 · Verify Service via Whoami (API Key Auth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Identifies the service from x-api-key', () => {",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('serviceId'));",
+                  "    pm.expect(json.slug).to.eql(pm.collectionVariables.get('serviceSlug'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/services/whoami",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "whoami"
+              ]
+            }
+          }
+        },
+        {
+          "name": "07 · Revoke API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Key is revoked and deactivated', () => {",
+                  "    pm.expect(json.revokedAt).to.not.be.null;",
+                  "    pm.expect(json.active).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/keys/{{apiKeyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "keys",
+                "{{apiKeyId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "08 · Use Revoked API Key (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', () => {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/services/whoami",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "whoami"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 · Revenue Events & Ingest",
+      "item": [
+        {
+          "name": "01 · Mint Ingest API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Ingest key minted and saved', () => {",
+                  "    pm.expect(json.key).to.be.a('string');",
+                  "    pm.collectionVariables.set('ingestApiKey', json.key);",
+                  "    pm.collectionVariables.set('ingestApiKeyId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Active Ingestion Key\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "keys"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02 · Ingest Revenue Event (First Time)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.collectionVariables.set('externalId', `txn_${stamp}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202 Accepted', () => {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Duplicate is false on first submission', () => {",
+                  "    pm.expect(json.duplicate).to.be.false;",
+                  "    pm.expect(json.event).to.be.an('object');",
+                  "    pm.expect(json.event.externalId).to.eql(pm.collectionVariables.get('externalId'));",
+                  "    pm.expect(json.event.amountMinor).to.eql('250000');",
+                  "    pm.collectionVariables.set('eventId', json.event.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"{{externalId}}\",\n  \"type\": \"airtime.purchase\",\n  \"amountMinor\": 250000,\n  \"currency\": \"NGN\",\n  \"occurredAt\": \"2026-09-14T12:00:00.000Z\",\n  \"metadata\": {\n    \"msisdn\": \"+2348030001234\",\n    \"channel\": \"ussd\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 · Ingest Duplicate Event (Idempotency Check)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202 Accepted', () => {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Duplicate is true on identical externalId', () => {",
+                  "    pm.expect(json.duplicate).to.be.true;",
+                  "    pm.expect(json.event.id).to.eql(pm.collectionVariables.get('eventId'));",
+                  "    pm.expect(json.event.externalId).to.eql(pm.collectionVariables.get('externalId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"{{externalId}}\",\n  \"type\": \"airtime.purchase\",\n  \"amountMinor\": 250000,\n  \"currency\": \"NGN\",\n  \"occurredAt\": \"2026-09-14T12:00:00.000Z\",\n  \"metadata\": {\n    \"msisdn\": \"+2348030001234\",\n    \"channel\": \"ussd\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 · List Events via API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Events array contains the ingested event', () => {",
+                  "    pm.expect(json.events).to.be.an('array');",
+                  "    const found = json.events.some(e => e.id === pm.collectionVariables.get('eventId'));",
+                  "    pm.expect(found).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 · Get Event by ID via API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns exact event details', () => {",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('eventId'));",
+                  "    pm.expect(json.externalId).to.eql(pm.collectionVariables.get('externalId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{eventId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "06 · List Service Events (Dashboard View)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Dashboard retrieves service events', () => {",
+                  "    pm.expect(json.events).to.be.an('array');",
+                  "    const found = json.events.some(e => e.id === pm.collectionVariables.get('eventId'));",
+                  "    pm.expect(found).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "07 · Get Service Events Summary (Dashboard View)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Summary contains status aggregation and count', () => {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.be.above(0);",
+                  "    const ngnSummary = json.find(s => s.currency === 'NGN' && s.status === 'PENDING');",
+                  "    pm.expect(ngnSummary).to.not.be.undefined;",
+                  "    pm.expect(ngnSummary.count).to.be.above(0);",
+                  "    pm.expect(ngnSummary.totalMinor).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/events/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "events",
+                "summary"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
