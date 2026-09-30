@@ -19,15 +19,6 @@ ALTER TABLE "Service" ADD COLUMN "baseCurrency" TEXT NOT NULL DEFAULT 'NGN';
 -- CreateEnum
 CREATE TYPE "AccountType" AS ENUM ('ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE');
 
-CONSTRAINT "User_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "Service_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "ApiKey_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateTable
 CREATE TABLE "Account" (
     "id" TEXT NOT NULL,
@@ -37,7 +28,7 @@ CREATE TABLE "Account" (
     "type" "AccountType" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -53,7 +44,7 @@ CREATE TABLE "Order" (
     "placedAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -69,7 +60,7 @@ CREATE TABLE "LedgerTransaction" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "reversesTransactionId" TEXT,
 
-CONSTRAINT "LedgerTransaction_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "LedgerTransaction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -83,7 +74,7 @@ CREATE TABLE "Entry" (
     "baseAmountMinor" BIGINT NOT NULL,
     "occurredAt" TIMESTAMP(3) NOT NULL,
 
-CONSTRAINT "Entry_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Entry_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex

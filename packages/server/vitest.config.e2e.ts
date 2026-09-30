@@ -8,5 +8,9 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    globalSetup: ['./test/e2e-setup.ts'],
+    fileParallelism: false,
+    testTimeout: 30_000,
+    hookTimeout: 120_000,
   },
 });
