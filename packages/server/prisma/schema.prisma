@@ -42,6 +42,7 @@ model Service {
   slug         String   @unique
   name         String
   baseCurrency String   @default("NGN")
+  timezone     String   @default("Africa/Lagos")
   ownerId      String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -70,12 +71,13 @@ model ApiKey {
 }
 
 model Account {
-  id        String      @id @default(cuid())
-  serviceId String
-  code      String
-  name      String
-  type      AccountType
-  createdAt DateTime    @default(now())
+  id         String      @id @default(cuid())
+  serviceId  String
+  code       String
+  name       String
+  type       AccountType
+  createdAt  DateTime    @default(now())
+  archivedAt DateTime?
 
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   entries Entry[]
@@ -92,6 +94,7 @@ model Order {
   description String?
   customerRef String?
   metadata    Json?
+  requestHash String?
   placedAt    DateTime
   createdAt   DateTime @default(now())
 
@@ -105,23 +108,26 @@ model Order {
 model LedgerTransaction {
   id                    String   @id @default(cuid())
   serviceId             String
-  orderId               String
+  orderId               String?
   externalId            String
   description           String?
   currency              String
   exchangeRate          String
+  rateSource            String?
+  requestHash           String?
   occurredAt            DateTime
   createdAt             DateTime @default(now())
   reversesTransactionId String?  @unique
 
   service    Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  order      Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order?             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   reverses   LedgerTransaction? @relation("TransactionReversal", fields: [reversesTransactionId], references: [id])
   reversedBy LedgerTransaction? @relation("TransactionReversal")
   entries    Entry[]
 
   @@unique([serviceId, externalId])
   @@index([orderId])
+  @@index([serviceId, occurredAt])
 }
 
 model Entry {
@@ -139,6 +145,7 @@ model Entry {
   account     Account           @relation(fields: [accountId], references: [id])
 
   @@index([serviceId, occurredAt])
+  @@index([serviceId, accountId, occurredAt])
   @@index([accountId])
   @@index([transactionId])
 }

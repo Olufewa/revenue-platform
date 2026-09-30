@@ -13,6 +13,7 @@ export function serviceFixture(overrides: { id?: string; baseCurrency?: string }
     slug: 'airtime-1a2b3c4d',
     name: 'MTN Airtime Service',
     baseCurrency: overrides.baseCurrency ?? 'NGN',
+    timezone: 'Africa/Lagos',
     ownerId: 'usr_1',
     createdAt: new Date('2026-09-01T00:00:00.000Z'),
     updatedAt: new Date('2026-09-01T00:00:00.000Z'),
@@ -27,6 +28,7 @@ export function accountFixture(code: string, type: AccountType) {
     name: code.replace(/_/g, ' '),
     type,
     createdAt: new Date('2026-09-01T00:00:00.000Z'),
+    archivedAt: null,
   });
 }
 
@@ -40,6 +42,7 @@ export function orderFixture(overrides: { id?: string; amount?: bigint; currency
     description: '1GB data bundle',
     customerRef: '+2348030001234',
     metadata: null,
+    requestHash: null,
     placedAt: new Date('2026-09-15T12:00:00.000Z'),
     createdAt: new Date('2026-09-15T12:00:01.000Z'),
   });
@@ -71,6 +74,8 @@ export function transactionFixture(
     description: null,
     currency: 'NGN',
     exchangeRate: '1',
+    rateSource: null,
+    requestHash: null,
     occurredAt,
     createdAt: occurredAt,
     reversesTransactionId: null,

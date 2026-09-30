@@ -15,7 +15,7 @@ export class LedgerTransactionEntity {
   private constructor(
     readonly id: string,
     readonly serviceId: string,
-    readonly orderId: string,
+    readonly orderId: string | null,
     readonly externalId: string,
     readonly description: string | null,
     readonly currency: Currency,

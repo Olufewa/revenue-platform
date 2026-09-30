@@ -27,6 +27,7 @@ describe('ServiceEntity', () => {
       slug: 'airtime-1a2b3c4d',
       name: 'Airtime',
       baseCurrency: 'NGN',
+      timezone: 'Africa/Lagos',
       ownerId: 'usr_1',
       createdAt: new Date(),
       updatedAt: new Date(),

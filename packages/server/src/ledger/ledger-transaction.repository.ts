@@ -18,7 +18,7 @@ const INCLUDE = {
 
 export type NewLedgerTransaction = {
   serviceId: string;
-  orderId: string;
+  orderId: string | null;
   externalId: string;
   description?: string;
   currency: Currency;
