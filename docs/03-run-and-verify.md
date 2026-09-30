@@ -124,9 +124,6 @@ curl -i -X POST http://localhost:3003/auth/register \
   -d '{"email":"not-an-email","name":"x","password":"123","isAdmin":true}'
 ```
 → **400** listing every problem, including that `isAdmin` is not allowed.
-
-Register and login allow 5 requests per IP per minute. If you run these checks
-quickly you'll see **429**. Wait a minute and carry on.
 That last one is `forbidNonWhitelisted` earning its keep: without it, someone
 could try to set fields you never meant to expose.
 

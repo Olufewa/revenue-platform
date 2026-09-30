@@ -85,8 +85,6 @@ All routes are under `http://localhost:3003`.
 | POST | `/auth/register` | — | 201 the new user |
 | POST | `/auth/login` | — | 200 `{ access_token }` |
 
-Both are limited to 5 requests per IP per minute (429 after that).
-
 ### Services and API keys
 
 | Method | Route | Auth | Returns |

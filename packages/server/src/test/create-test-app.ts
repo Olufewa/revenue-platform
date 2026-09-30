@@ -1,10 +1,4 @@
-import {
-  INestApplication,
-  type DynamicModule,
-  Provider,
-  Type,
-  ValidationPipe,
-} from '@nestjs/common';
+import { INestApplication, Provider, Type, ValidationPipe } from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { createHash, randomBytes } from 'node:crypto';
@@ -40,12 +34,11 @@ export interface TestApp {
 export async function createTestApp(options: {
   controllers: Type<unknown>[];
   providers?: Provider[];
-  imports?: Array<Type<unknown> | DynamicModule>;
 }): Promise<TestApp> {
   const prisma = createPrismaMock();
 
   const moduleRef = await Test.createTestingModule({
-    imports: [JwtModule.register({ secret: JWT_SECRET }), ...(options.imports ?? [])],
+    imports: [JwtModule.register({ secret: JWT_SECRET })],
     controllers: options.controllers,
     providers: [
       AuthGuard,
