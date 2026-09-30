@@ -38,6 +38,7 @@ export class ServicesService {
           name: dto.name,
           slug,
           baseCurrency: dto.baseCurrency,
+          timezone: dto.timezone,
           ownerId,
         });
       } catch (error) {

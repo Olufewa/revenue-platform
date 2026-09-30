@@ -1,5 +1,5 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
-import { IsCurrencyCode } from '../../money/validators.js';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsCurrencyCode, IsTimeZone } from '../../common/validators.js';
 
 export class CreateServiceDto {
   @IsString()
@@ -9,4 +9,9 @@ export class CreateServiceDto {
 
   @IsCurrencyCode()
   baseCurrency!: string;
+
+  /** Which local day revenue is reported under. Defaults to Africa/Lagos. */
+  @IsOptional()
+  @IsTimeZone()
+  timezone?: string;
 }

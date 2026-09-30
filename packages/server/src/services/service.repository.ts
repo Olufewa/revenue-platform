@@ -37,6 +37,7 @@ export class ServiceRepository {
     name: string;
     slug: string;
     baseCurrency: string;
+    timezone?: string;
     ownerId: string;
   }): Promise<ServiceEntity> {
     return ServiceEntity.fromRecord(await this.db.service.create({ data }));

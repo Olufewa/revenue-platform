@@ -78,6 +78,13 @@ describe('ReportsService', () => {
       ),
     );
 
+    expect(entries.incomeByDay).toHaveBeenCalledWith(
+      'svc_1',
+      new Date('2026-09-01T00:00:00.000Z'),
+      new Date('2026-09-30T00:00:00.000Z'),
+      'Africa/Lagos',
+    );
+    expect(result.timezone).toBe('Africa/Lagos');
     expect(result.series).toEqual([
       { day: '2026-09-15', amount: { amount: '325581', currency: 'NGN' } },
       { day: '2026-09-16', amount: { amount: '-162791', currency: 'NGN' } },

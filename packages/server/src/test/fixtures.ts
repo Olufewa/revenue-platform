@@ -7,13 +7,15 @@ import {
 import { OrderEntity } from '../orders/entities/order.entity.js';
 import { ServiceEntity } from '../services/entities/service.entity.js';
 
-export function serviceFixture(overrides: { id?: string; baseCurrency?: string } = {}) {
+export function serviceFixture(
+  overrides: { id?: string; baseCurrency?: string; timezone?: string } = {},
+) {
   return ServiceEntity.fromRecord({
     id: overrides.id ?? 'svc_1',
     slug: 'airtime-1a2b3c4d',
     name: 'MTN Airtime Service',
     baseCurrency: overrides.baseCurrency ?? 'NGN',
-    timezone: 'Africa/Lagos',
+    timezone: overrides.timezone ?? 'Africa/Lagos',
     ownerId: 'usr_1',
     createdAt: new Date('2026-09-01T00:00:00.000Z'),
     updatedAt: new Date('2026-09-01T00:00:00.000Z'),

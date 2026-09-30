@@ -15,7 +15,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import type { EntryDirection } from '../../generated/prisma/client.js';
-import { IsCurrencyCode, IsExchangeRate } from '../../money/validators.js';
+import { IsCurrencyCode, IsExchangeRate } from '../../common/validators.js';
 
 export class EntryLegDto {
   @IsString()

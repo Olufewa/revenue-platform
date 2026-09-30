@@ -59,7 +59,10 @@ export class ReportsService {
     };
   }
 
-  /** Net income per day over a window (default: the last 30 days), in base currency. */
+  /**
+   * Net income per local day (in the service's timezone) over a window
+   * (default: the last 30 days), in base currency.
+   */
   async revenue(serviceId: string, userId: string, query: DateRangeDto) {
     const service = await this.services.assertCanAccess(serviceId, userId);
     const base = service.baseCurrency;
@@ -67,7 +70,7 @@ export class ReportsService {
     const to = query.to ? new Date(query.to) : new Date();
     const from = query.from ? new Date(query.from) : new Date(to.getTime() - DEFAULT_WINDOW_MS);
 
-    const days = await this.entries.incomeByDay(serviceId, from, to);
+    const days = await this.entries.incomeByDay(serviceId, from, to, service.timezone);
     const series = days.map((d) => ({
       day: d.day.toISOString().slice(0, 10),
       amount: Money.of(BigInt(d.amountMinor), base),
@@ -75,6 +78,7 @@ export class ReportsService {
 
     return {
       baseCurrency: base.code,
+      timezone: service.timezone,
       window: { from: from.toISOString(), to: to.toISOString() },
       series,
       total: Money.sum(series.map((s) => s.amount), base),

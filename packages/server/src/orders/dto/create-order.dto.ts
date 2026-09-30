@@ -9,7 +9,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { IsCurrencyCode } from '../../money/validators.js';
+import { IsCurrencyCode } from '../../common/validators.js';
 
 export class CreateOrderDto {
   @IsString()

@@ -29,15 +29,19 @@ export class EntryRepository {
     }));
   }
 
-  /** Net income (credits − debits on INCOME accounts) in base currency, per UTC day. */
+  /**
+   * Net income (credits − debits on INCOME accounts) in base currency, per
+   * local day in `timeZone`. occurredAt is stored as UTC.
+   */
   async incomeByDay(
     serviceId: string,
     from: Date,
     to: Date,
+    timeZone: string,
   ): Promise<Array<{ day: Date; amountMinor: bigint }>> {
     return this.db.$queryRaw<Array<{ day: Date; amountMinor: bigint }>>`
       SELECT
-        date_trunc('day', e."occurredAt")::date AS "day",
+        date_trunc('day', (e."occurredAt" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone})::date AS "day",
         SUM(CASE WHEN e."direction" = 'CREDIT' THEN e."baseAmountMinor" ELSE -e."baseAmountMinor" END)::bigint AS "amountMinor"
       FROM "Entry" e
       JOIN "Account" a ON a."id" = e."accountId"

@@ -62,6 +62,7 @@ describe('revenue tracker (e2e)', () => {
       .expect(201);
     serviceId = service.body.id;
     expect(service.body.baseCurrency).toBe('NGN');
+    expect(service.body.timezone).toBe('Africa/Lagos');
 
     const key = await request(http)
       .post(`/services/${serviceId}/keys`)
@@ -159,7 +160,8 @@ describe('revenue tracker (e2e)', () => {
       .set('x-api-key', apiKey)
       .send({
         externalId: `usd-${stamp}`,
-        occurredAt: '2026-09-16T09:00:00.000Z',
+        // 23:30 UTC on the 16th is 00:30 on the 17th in Lagos.
+        occurredAt: '2026-09-16T23:30:00.000Z',
         currency: 'USD',
         exchangeRate: '1550.25',
         entries: [
@@ -263,7 +265,7 @@ describe('revenue tracker (e2e)', () => {
     expect(balance('bundle_revenue')).toBe('1913009');
   });
 
-  it('reports net revenue per day', async () => {
+  it('reports net revenue per local day in the service timezone', async () => {
     const res = await request(http)
       .get(`/services/${serviceId}/reports/revenue`)
       .query({ from: '2026-09-01T00:00:00.000Z', to: '2026-09-30T23:59:59.999Z' })
@@ -273,10 +275,11 @@ describe('revenue tracker (e2e)', () => {
     const byDay = Object.fromEntries(
       res.body.series.map((s: { day: string; amount: { amount: string } }) => [s.day, s.amount.amount]),
     );
+    // The USD top-up (23:30 UTC on the 16th) lands on the 17th, alongside the reversal.
+    expect(res.body.timezone).toBe('Africa/Lagos');
     expect(byDay).toEqual({
       '2026-09-15': '325581',
-      '2026-09-16': '1913009',
-      '2026-09-17': '-325581',
+      '2026-09-17': '1587428',
     });
     expect(res.body.total).toEqual({ amount: '1913009', currency: 'NGN' });
   });

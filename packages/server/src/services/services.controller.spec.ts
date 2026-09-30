@@ -58,6 +58,21 @@ describe('ServicesController', () => {
       expect(res.body.slug).toBe(service.slug);
     });
 
+    it('accepts a timezone', async () => {
+      services.create.mockResolvedValue(service);
+
+      await request(t.app.getHttpServer())
+        .post('/services')
+        .set('Authorization', t.bearer('usr_1'))
+        .send({ name: service.name, baseCurrency: 'GHS', timezone: 'Africa/Accra' })
+        .expect(201);
+
+      expect(services.create).toHaveBeenCalledWith(
+        { name: service.name, baseCurrency: 'GHS', timezone: 'Africa/Accra' },
+        'usr_1',
+      );
+    });
+
     it('rejects a client-supplied slug', async () => {
       await request(t.app.getHttpServer())
         .post('/services')
@@ -80,6 +95,7 @@ describe('ServicesController', () => {
       ['a missing base currency', {}],
       ['an unknown base currency', { baseCurrency: 'XYZ' }],
       ['a lowercase base currency', { baseCurrency: 'ngn' }],
+      ['an unknown timezone', { baseCurrency: 'NGN', timezone: 'Mars/Olympus_Mons' }],
     ])('returns 400 for %s', async (_label, extra) => {
       await request(t.app.getHttpServer())
         .post('/services')
