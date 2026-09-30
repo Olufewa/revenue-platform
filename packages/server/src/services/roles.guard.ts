@@ -6,14 +6,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { UserRepository } from '../identity/user.repository.js';
 import { ROLES_KEY } from './roles.decorator.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    private readonly users: UserRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -31,12 +31,9 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: { role: true },
-    });
+    const role = await this.users.findRole(payload.sub);
 
-    if (!user || !required.includes(user.role)) {
+    if (!role || !required.includes(role)) {
       throw new ForbiddenException('You do not have access to this');
     }
 

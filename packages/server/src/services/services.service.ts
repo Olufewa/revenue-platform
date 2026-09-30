@@ -2,39 +2,62 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { UserRepository } from '../identity/user.repository.js';
+import { isUniqueViolation } from '../prisma/db-client.js';
 import { CreateServiceDto } from './dto/create-service.dto.js';
+import { ServiceEntity } from './entities/service.entity.js';
+import { ServiceRepository } from './service.repository.js';
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly services: ServiceRepository,
+    private readonly users: UserRepository,
+  ) {}
 
   async create(dto: CreateServiceDto, ownerId: string) {
-    const existing = await this.prisma.service.findUnique({
-      where: { slug: dto.slug },
-    });
+    const MAX_RETRIES = 3;
 
-    if (existing) {
-      throw new ConflictException(`The slug "${dto.slug}" is already taken`);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const slug = ServiceEntity.generateSlug(dto.name);
+
+      try {
+        if (await this.services.existsBySlug(slug)) {
+          if (attempt === MAX_RETRIES) {
+            throw new ConflictException(
+              'Failed to generate a unique slug after 3 attempts.',
+            );
+          }
+          continue;
+        }
+
+        return await this.services.create({
+          name: dto.name,
+          slug,
+          baseCurrency: dto.baseCurrency,
+          ownerId,
+        });
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          if (attempt === MAX_RETRIES) {
+            throw new InternalServerErrorException(
+              'Failed to generate a unique slug due to high concurrency.',
+            );
+          }
+          continue;
+        }
+        throw error;
+      }
     }
-
-    return this.prisma.service.create({
-      data: { name: dto.name, slug: dto.slug, ownerId },
-    });
   }
 
   async findAllFor(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
+    const role = await this.users.findRole(userId);
 
-    return this.prisma.service.findMany({
-      where: user?.role === 'ADMIN' ? {} : { ownerId: userId },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.services.findNewestFirst(role === 'ADMIN' ? undefined : userId);
   }
 
   async findOneFor(id: string, userId: string) {
@@ -44,28 +67,21 @@ export class ServicesService {
   async remove(id: string, userId: string) {
     await this.assertCanAccess(id, userId);
 
-    await this.prisma.service.delete({ where: { id } });
+    await this.services.delete(id);
   }
 
   async assertCanAccess(serviceId: string, userId: string) {
-    const service = await this.prisma.service.findUnique({
-      where: { id: serviceId },
-    });
+    const service = await this.services.findById(serviceId);
 
     if (!service) {
       throw new NotFoundException('No such service');
     }
 
-    if (service.ownerId === userId) {
+    if (service.isOwnedBy(userId)) {
       return service;
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-
-    if (user?.role !== 'ADMIN') {
+    if ((await this.users.findRole(userId)) !== 'ADMIN') {
       throw new ForbiddenException('That service belongs to someone else');
     }
 

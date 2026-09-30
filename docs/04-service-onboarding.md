@@ -1,7 +1,7 @@
 # 04 — Service onboarding (module 3)
 
 `Service`, `ApiKey` and roles. A product team registers a service and receives a
-key; from module 4 onward that key is how their systems post revenue events.
+key; that key is how their systems send orders and ledger transactions.
 
 This is the first module with **two kinds of caller**. A human signs in and gets
 a JWT. A machine has no browser, no session and nobody to type a password, so it
@@ -49,14 +49,14 @@ request that needs it, not from the token.
 
 | Method | Route | Auth | Notes |
 |---|---|---|---|
-| POST | `/services` | Bearer | 201, 409 on a duplicate slug |
+| POST | `/services` | Bearer | 201; body `{ name, baseCurrency }`, slug is generated |
 | GET | `/services` | Bearer | your services; everyone's if you are ADMIN |
 | GET | `/services/:id` | Bearer | 404 if unknown, 403 if not yours |
 | DELETE | `/services/:id` | Bearer + ADMIN | 204, cascades to its keys |
 | POST | `/services/:id/keys` | Bearer | 201, **the only time the full key is shown** |
 | GET | `/services/:id/keys` | Bearer | prefixes only, never the secret |
 | DELETE | `/services/:id/keys/:keyId` | Bearer | revokes; the row survives |
-| GET | `/services/whoami` | `x-api-key` | the machine's `/auth/me` |
+| GET | `/services/whoami` | `x-api-key` | which service a key belongs to |
 
 ## The four decisions worth understanding
 
@@ -121,8 +121,7 @@ service?". Every route calls it, so no route can forget to.
 ## Checks
 
 Import `postman/revenue-platform.postman_collection.json`
-and hit **Run**. In order it: logs in, creates a service, rejects a duplicate
-slug, mints a key, calls `/services/whoami` with it, confirms the key list never
+and hit **Run**. In order it: logs in, creates a service, mints a key, calls `/services/whoami` with it, confirms the key list never
 contains the secret, revokes the key, and confirms the revoked key now returns
 401.
 
@@ -146,10 +145,9 @@ Two things the runner cannot do for you:
 
 The absent-header message (`Missing x-api-key header`) deliberately differs from the invalid-key message (`Invalid API key`). The security invariant is that unknown, tampered, and revoked keys must be indistinguishable from each other so an attacker cannot probe valid key IDs or discover whether a key existed before revocation. A caller who provided no header at all already knows they sent no header, so acknowledging that fact leaks nothing while giving legitimate developers immediate, clear feedback during integration.
 
-`lastUsedAt` is written at most once per five minutes per key. Ingesting revenue events generates high write concurrency across product services; updating the exact timestamp on every single request causes severe row-level lock contention and unnecessary write traffic on the `ApiKey` row. The underlying principle: when an audit or tracking field is only needed approximately, coarsen how frequently it writes to keep hot transaction paths fast and uncontended.
+`lastUsedAt` is written at most once per five minutes per key. Ingesting orders and transactions generates high write concurrency across product services; updating the exact timestamp on every single request causes severe row-level lock contention and unnecessary write traffic on the `ApiKey` row. The underlying principle: when an audit or tracking field is only needed approximately, coarsen how frequently it writes to keep hot transaction paths fast and uncontended.
 
 API key parsing previously split the key string on `_` (`sk_live_<publicId>_<secret>`). Because secrets were encoded using `base64url`, which includes both `-` and `_`, roughly half of all generated 32-byte secrets naturally contained at least one underscore. Splitting on `_` fragmented the secret into five or more pieces, causing `ApiKeyGuard` to reject valid keys with `401 Invalid API key`. This was hard to catch because the test suite asserted the minted string format and authentication separately, producing intermittent failures that read like test flakiness rather than a code defect. The fix is two-part: `ApiKeyGuard` parses with an anchored regular expression (`/^sk_live_([0-9a-f]{16})_(.+)$/`) so any legacy base64url keys remain fully backward compatible, and newly minted secrets use a `hex` alphabet so an underscore can never appear in the secret. The general rule: when building a structured identifier, pick an alphabet that excludes the delimiter.
 
-Next module: event ingest — `RevenueEvent`, idempotency on
-`(serviceId, externalId)`, and `POST /events` authenticated by the key you just
-minted.
+Next: [orders and the ledger](05-orders-and-ledger.md) — the key you just minted
+is what sends them.

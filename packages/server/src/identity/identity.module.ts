@@ -4,10 +4,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { IdentityController } from './identity.controller.js';
 import { IdentityService } from './identity.service.js';
 import { AuthGuard } from './auth.guard.js';
+import { UserRepository } from './user.repository.js';
 
 @Module({
   imports: [
-
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -18,8 +18,7 @@ import { AuthGuard } from './auth.guard.js';
     }),
   ],
   controllers: [IdentityController],
-  providers: [IdentityService, AuthGuard],
-
-  exports: [JwtModule, AuthGuard],
+  providers: [IdentityService, AuthGuard, UserRepository],
+  exports: [JwtModule, AuthGuard, UserRepository],
 })
 export class IdentityModule {}

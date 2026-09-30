@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module.js';
+import { AccountsModule } from './accounts/accounts.module.js';
 import { IdentityModule } from './identity/identity.module.js';
-import { ServicesModule } from './services/services.module.js';
-import { EventsModule } from './events/events.module.js';
 import { LedgerModule } from './ledger/ledger.module.js';
-import { MetricsModule } from './metrics/metrics.module.js';
+import { OrdersModule } from './orders/orders.module.js';
+import { PrismaModule } from './prisma/prisma.module.js';
+import { ReportsModule } from './reports/reports.module.js';
+import { ServicesModule } from './services/services.module.js';
 
 @Module({
   imports: [
@@ -13,9 +14,10 @@ import { MetricsModule } from './metrics/metrics.module.js';
     PrismaModule,
     IdentityModule,
     ServicesModule,
-    EventsModule,
+    AccountsModule,
+    OrdersModule,
     LedgerModule,
-    MetricsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

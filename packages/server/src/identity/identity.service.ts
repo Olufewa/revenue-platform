@@ -4,55 +4,36 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import bcrypt from 'bcryptjs';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { UserEntity } from './entities/user.entity.js';
+import { UserRepository } from './user.repository.js';
 
 @Injectable()
 export class IdentityService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly users: UserRepository,
     private readonly jwt: JwtService,
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
+    const existing = await this.users.findByEmail(dto.email);
 
     if (existing) {
       throw new ConflictException('That email is already registered');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        name: dto.name,
-        passwordHash,
-      },
+    return this.users.create({
+      email: dto.email,
+      name: dto.name,
+      passwordHash: await UserEntity.hashPassword(dto.password),
     });
-
-    return this.publicUser(user);
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
+    const user = await this.users.findByEmail(dto.email);
 
-    if (!user) {
-      throw new UnauthorizedException('Email or password is incorrect');
-    }
-
-    const passwordMatches = await bcrypt.compare(
-      dto.password,
-      user.passwordHash,
-    );
-
-    if (!passwordMatches) {
+    if (!user || !(await user.verifyPassword(dto.password))) {
       throw new UnauthorizedException('Email or password is incorrect');
     }
 
@@ -65,26 +46,12 @@ export class IdentityService {
   }
 
   async findById(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.users.findById(id);
 
     if (!user) {
       throw new UnauthorizedException();
     }
 
-    return this.publicUser(user);
-  }
-
-  private publicUser(user: {
-    id: string;
-    email: string;
-    name: string;
-    createdAt: Date;
-  }) {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      createdAt: user.createdAt,
-    };
+    return user;
   }
 }

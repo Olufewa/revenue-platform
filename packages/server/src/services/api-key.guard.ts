@@ -4,12 +4,12 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createHash, timingSafeEqual } from 'node:crypto';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { ApiKeyRepository } from './api-key.repository.js';
+import { ApiKeyEntity } from './entities/api-key.entity.js';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly apiKeys: ApiKeyRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -19,45 +19,25 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Missing x-api-key header');
     }
 
-    const match = /^sk_live_([0-9a-f]{16})_(.+)$/.exec(presented);
+    const parsed = ApiKeyEntity.parse(presented);
 
-    if (!match) {
+    if (!parsed) {
       throw new UnauthorizedException('Invalid API key');
     }
 
-    const [, publicId, secret] = match;
+    const found = await this.apiKeys.findByPublicIdWithService(parsed.publicId);
 
-    const key = await this.prisma.apiKey.findUnique({
-      where: { publicId },
-      include: { service: true },
-    });
-
-    if (!key || key.revokedAt) {
-      throw new UnauthorizedException('Invalid API key');
-    }
-
-    const presentedHash = createHash('sha256').update(secret).digest();
-    const storedHash = Buffer.from(key.secretHash, 'hex');
-
-    const matches =
-      presentedHash.length === storedHash.length &&
-      timingSafeEqual(presentedHash, storedHash);
-
-    if (!matches) {
+    if (!found || !found.key.isActive || !found.key.matchesSecret(parsed.secret)) {
       throw new UnauthorizedException('Invalid API key');
     }
 
     const now = new Date();
-    const stale =
-      !key.lastUsedAt || now.getTime() - key.lastUsedAt.getTime() > 300_000;
 
-    if (stale) {
-      void this.prisma.apiKey
-        .update({ where: { id: key.id }, data: { lastUsedAt: now } })
-        .catch(() => undefined);
+    if (found.key.isUsageStale(now)) {
+      void this.apiKeys.touch(found.key.id, now).catch(() => undefined);
     }
 
-    request.service = key.service;
+    request.service = found.service;
     return true;
   }
 }

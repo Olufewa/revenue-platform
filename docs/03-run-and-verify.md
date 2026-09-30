@@ -101,19 +101,19 @@ discover which emails are registered.
 
 ```bash
 # 6 - protected route
-curl http://localhost:3003/auth/me -H "Authorization: Bearer PASTE_TOKEN"
+curl http://localhost:3003/services -H "Authorization: Bearer PASTE_TOKEN"
 ```
-→ **200** and your user.
+→ **200** and your services (an empty list at first).
 
 ```bash
 # 7 - no token
-curl -i http://localhost:3003/auth/me
+curl -i http://localhost:3003/services
 ```
 → **401**.
 
 ```bash
 # 8 - tampered token
-curl -i http://localhost:3003/auth/me -H "Authorization: Bearer PASTE_TOKENxxxx"
+curl -i http://localhost:3003/services -H "Authorization: Bearer PASTE_TOKENxxxx"
 ```
 → **401**. This is what proves the token is *verified*, not merely decoded.
 

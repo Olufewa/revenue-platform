@@ -12,16 +12,12 @@ enum Role {
   MEMBER
 }
 
-enum EventStatus {
-  PENDING
-  POSTED
-  FAILED
-}
-
 enum AccountType {
   ASSET
   LIABILITY
-  REVENUE
+  EQUITY
+  INCOME
+  EXPENSE
 }
 
 enum EntryDirection {
@@ -42,19 +38,20 @@ model User {
 }
 
 model Service {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  name      String
-  ownerId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  baseCurrency String   @default("NGN")
+  ownerId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  owner           User             @relation(fields: [ownerId], references: [id])
-  apiKeys         ApiKey[]
-  events          RevenueEvent[]
-  postingRules    PostingRule[]
-  entries         Entry[]
-  dailyAggregates DailyAggregate[]
+  owner        User                @relation(fields: [ownerId], references: [id])
+  apiKeys      ApiKey[]
+  accounts     Account[]
+  orders       Order[]
+  transactions LedgerTransaction[]
+  entries      Entry[]
 }
 
 model ApiKey {
@@ -72,87 +69,76 @@ model ApiKey {
   @@index([serviceId])
 }
 
-model RevenueEvent {
-  id              String      @id @default(cuid())
-  serviceId       String
-  externalId      String
-  type            String
-  amountMinor     BigInt
-  currency        String
-  occurredAt      DateTime
-  metadata        Json?
-  status          EventStatus @default(PENDING)
-  receivedAt      DateTime    @default(now())
-  failureReason   String?
-  reversesEventId String?
-
-  service    Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  entries    Entry[]
-  reverses   RevenueEvent?  @relation("EventReversals", fields: [reversesEventId], references: [id])
-  reversedBy RevenueEvent[] @relation("EventReversals")
-
-  @@unique([serviceId, externalId])
-  @@index([serviceId, occurredAt])
-  @@index([serviceId, status])
-  @@index([reversesEventId])
-}
-
 model Account {
   id        String      @id @default(cuid())
-  code      String      @unique
+  serviceId String
+  code      String
   name      String
   type      AccountType
   createdAt DateTime    @default(now())
 
-  entries         Entry[]
-  dailyAggregates DailyAggregate[]
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  entries Entry[]
+
+  @@unique([serviceId, code])
 }
 
-model PostingRule {
-  id            String   @id @default(cuid())
-  serviceId     String
-  eventType     String
-  effectiveFrom DateTime
-  lines         Json
-  createdAt     DateTime @default(now())
+model Order {
+  id          String   @id @default(cuid())
+  serviceId   String
+  externalId  String
+  amountMinor BigInt
+  currency    String
+  description String?
+  customerRef String?
+  metadata    Json?
+  placedAt    DateTime
+  createdAt   DateTime @default(now())
 
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  service      Service             @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  transactions LedgerTransaction[]
 
-  @@index([serviceId, eventType, effectiveFrom])
+  @@unique([serviceId, externalId])
+  @@index([serviceId, placedAt])
+}
+
+model LedgerTransaction {
+  id                    String   @id @default(cuid())
+  serviceId             String
+  orderId               String
+  externalId            String
+  description           String?
+  currency              String
+  exchangeRate          String
+  occurredAt            DateTime
+  createdAt             DateTime @default(now())
+  reversesTransactionId String?  @unique
+
+  service    Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  order      Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reverses   LedgerTransaction? @relation("TransactionReversal", fields: [reversesTransactionId], references: [id])
+  reversedBy LedgerTransaction? @relation("TransactionReversal")
+  entries    Entry[]
+
+  @@unique([serviceId, externalId])
+  @@index([orderId])
 }
 
 model Entry {
-  id          String         @id @default(cuid())
-  eventId     String
-  serviceId   String
-  accountId   String
-  direction   EntryDirection
-  amountMinor BigInt
-  currency    String
-  occurredAt  DateTime
-  bookedAt    DateTime       @default(now())
+  id              String         @id @default(cuid())
+  transactionId   String
+  serviceId       String
+  accountId       String
+  direction       EntryDirection
+  amountMinor     BigInt
+  baseAmountMinor BigInt
+  occurredAt      DateTime
 
-  event   RevenueEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  service Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  account Account      @relation(fields: [accountId], references: [id])
+  transaction LedgerTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  service     Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  account     Account           @relation(fields: [accountId], references: [id])
 
   @@index([serviceId, occurredAt])
-  @@index([eventId])
-}
-
-model DailyAggregate {
-  id          String   @id @default(cuid())
-  serviceId   String
-  accountId   String
-  currency    String
-  day         DateTime @db.Date
-  debitMinor  BigInt
-  creditMinor BigInt
-  entryCount  Int
-  updatedAt   DateTime @updatedAt
-
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  account Account @relation(fields: [accountId], references: [id])
-
-  @@unique([serviceId, accountId, currency, day])
+  @@index([accountId])
+  @@index([transactionId])
 }
