@@ -164,6 +164,7 @@ describe('revenue tracker (e2e)', () => {
         occurredAt: '2026-09-16T23:30:00.000Z',
         currency: 'USD',
         exchangeRate: '1550.25',
+        rateSource: 'CBN official 2026-09-16',
         entries: [
           { accountCode: 'cash', direction: 'DEBIT', amount: 1234 },
           { accountCode: 'bundle_revenue', direction: 'CREDIT', amount: 1234 },
@@ -171,6 +172,7 @@ describe('revenue tracker (e2e)', () => {
       })
       .expect(201);
 
+    expect(res.body.transaction.rateSource).toBe('CBN official 2026-09-16');
     for (const entry of res.body.transaction.entries) {
       expect(entry.amount.currency).toBe('USD');
       expect(entry.baseAmount).toEqual({ amount: '1913009', currency: 'NGN' });

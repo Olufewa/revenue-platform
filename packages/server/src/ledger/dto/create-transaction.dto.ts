@@ -51,6 +51,12 @@ export class CreateTransactionDto {
   @IsExchangeRate()
   exchangeRate?: string;
 
+  /** Where the rate came from, e.g. "CBN official 2026-09-16". Stored for audit. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  rateSource?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(500)

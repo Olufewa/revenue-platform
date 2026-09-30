@@ -75,6 +75,7 @@ export class TransactionsService {
         description: dto.description,
         currency: draft.currency,
         exchangeRate: draft.exchangeRate,
+        rateSource: dto.rateSource,
         requestHash: hash,
         occurredAt: new Date(dto.occurredAt),
         entries: draft.entries.map((entry) => ({
@@ -124,6 +125,7 @@ export class TransactionsService {
         description: dto.description ?? `Reversal of ${original.externalId}`,
         currency: original.currency,
         exchangeRate: original.exchangeRate,
+        rateSource: original.rateSource,
         requestHash: hash,
         occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : new Date(),
         reversesTransactionId: original.id,

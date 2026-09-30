@@ -86,6 +86,7 @@ describe('TransactionsService', () => {
         ...sale,
         currency: 'USD',
         exchangeRate: '1550.25',
+        rateSource: 'CBN official 2026-09-16',
         entries: [
           { accountCode: 'cash', direction: 'DEBIT', amount: 1234 },
           { accountCode: 'bundle_revenue', direction: 'CREDIT', amount: 1234 },
@@ -93,6 +94,7 @@ describe('TransactionsService', () => {
       });
 
       expect(created().currency.code).toBe('USD');
+      expect(created().rateSource).toBe('CBN official 2026-09-16');
       expect(created().entries.map((e) => e.baseAmount.toString())).toEqual([
         '1913009 NGN',
         '1913009 NGN',
@@ -251,10 +253,13 @@ describe('TransactionsService', () => {
     const dto = { externalId: 'sale-1-reversal', occurredAt: '2026-09-16T09:00:00.000Z' };
 
     it('writes mirror-image entries linked to the original', async () => {
-      transactions.findInService.mockResolvedValue(transactionFixture());
+      transactions.findInService.mockResolvedValue(
+        transactionFixture({ rateSource: 'CBN official 2026-09-15' }),
+      );
 
       await sut.reverse(service, 'txn_1', dto);
 
+      expect(created().rateSource).toBe('CBN official 2026-09-15');
       expect(created().reversesTransactionId).toBe('txn_1');
       expect(created().orderId).toBe('ord_1');
       expect(created().entries.map((e) => [e.accountId, e.direction, e.baseAmount.amountMinor])).toEqual([
