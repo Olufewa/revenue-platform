@@ -29,6 +29,20 @@ export class AccountRepository {
     return rows.map((row) => AccountEntity.fromRecord(row));
   }
 
+  async findByCode(serviceId: string, code: string): Promise<AccountEntity | null> {
+    const row = await this.db.account.findUnique({
+      where: { serviceId_code: { serviceId, code } },
+    });
+    return row && AccountEntity.fromRecord(row);
+  }
+
+  async update(
+    id: string,
+    data: { name?: string; archivedAt?: Date | null },
+  ): Promise<AccountEntity> {
+    return AccountEntity.fromRecord(await this.db.account.update({ where: { id }, data }));
+  }
+
   async findByCodes(serviceId: string, codes: string[]): Promise<AccountEntity[]> {
     const rows = await this.db.account.findMany({
       where: { serviceId, code: { in: codes } },

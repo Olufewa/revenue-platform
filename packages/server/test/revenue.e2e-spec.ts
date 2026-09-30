@@ -210,6 +210,50 @@ describe('revenue tracker (e2e)', () => {
     expect(list.body.transactions.some((t: { id: string }) => t.id === res.body.transaction.id)).toBe(true);
   });
 
+  it('blocks new entries to archived accounts but still allows reversals', async () => {
+    await request(http)
+      .post(`/services/${serviceId}/accounts`)
+      .set('Authorization', bearer)
+      .send({ code: 'promo_revenue', name: 'Promotions', type: 'INCOME' })
+      .expect(201);
+
+    const promo = (externalId: string) => ({
+      externalId,
+      occurredAt: '2026-09-15T13:00:00.000Z',
+      currency: 'NGN',
+      entries: [
+        { accountCode: 'cash', direction: 'DEBIT', amount: 1000 },
+        { accountCode: 'promo_revenue', direction: 'CREDIT', amount: 1000 },
+      ],
+    });
+
+    const recorded = await request(http)
+      .post('/transactions')
+      .set('x-api-key', apiKey)
+      .send(promo(`promo-${stamp}`))
+      .expect(201);
+
+    const archived = await request(http)
+      .patch(`/services/${serviceId}/accounts/promo_revenue`)
+      .set('Authorization', bearer)
+      .send({ archived: true })
+      .expect(200);
+    expect(archived.body.archived).toBe(true);
+
+    const refused = await request(http)
+      .post('/transactions')
+      .set('x-api-key', apiKey)
+      .send(promo(`promo2-${stamp}`))
+      .expect(400);
+    expect(refused.body.message).toContain('Archived account(s): promo_revenue');
+
+    await request(http)
+      .post(`/transactions/${recorded.body.transaction.id}/reverse`)
+      .set('x-api-key', apiKey)
+      .send({ externalId: `promo-rev-${stamp}`, occurredAt: '2026-09-15T14:00:00.000Z' })
+      .expect(201);
+  });
+
   it('reverses a transaction exactly once', async () => {
     const res = await request(http)
       .post(`/transactions/${saleId}/reverse`)

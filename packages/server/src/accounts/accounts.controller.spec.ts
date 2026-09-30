@@ -7,7 +7,7 @@ import { AccountsController } from './accounts.controller.js';
 import { AccountsService } from './accounts.service.js';
 
 describe('AccountsController', () => {
-  const accounts = { create: vi.fn(), list: vi.fn() };
+  const accounts = { create: vi.fn(), update: vi.fn(), list: vi.fn() };
   let t: TestApp;
 
   beforeAll(async () => {
@@ -64,6 +64,36 @@ describe('AccountsController', () => {
 
     it('returns 401 without a bearer token', async () => {
       await request(t.app.getHttpServer()).post('/services/svc_1/accounts').send(cash).expect(401);
+    });
+  });
+
+  describe('PATCH /services/:serviceId/accounts/:code', () => {
+    it('renames and archives', async () => {
+      accounts.update.mockResolvedValue(accountFixture('cash', 'ASSET', new Date()));
+
+      const res = await request(t.app.getHttpServer())
+        .patch('/services/svc_1/accounts/cash')
+        .set('Authorization', t.bearer('usr_1'))
+        .send({ name: 'Cash at bank', archived: true })
+        .expect(200);
+
+      expect(accounts.update).toHaveBeenCalledWith('svc_1', 'usr_1', 'cash', {
+        name: 'Cash at bank',
+        archived: true,
+      });
+      expect(res.body.archived).toBe(true);
+    });
+
+    it.each([
+      ['a non-boolean archived flag', { archived: 'yes' }],
+      ['a type change', { type: 'INCOME' }],
+      ['a code change', { code: 'bank' }],
+    ])('returns 400 for %s', async (_label, body) => {
+      await request(t.app.getHttpServer())
+        .patch('/services/svc_1/accounts/cash')
+        .set('Authorization', t.bearer('usr_1'))
+        .send(body)
+        .expect(400);
     });
   });
 

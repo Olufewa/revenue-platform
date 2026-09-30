@@ -22,7 +22,7 @@ export function serviceFixture(
   });
 }
 
-export function accountFixture(code: string, type: AccountType) {
+export function accountFixture(code: string, type: AccountType, archivedAt: Date | null = null) {
   return AccountEntity.fromRecord({
     id: `acc_${code}`,
     serviceId: 'svc_1',
@@ -30,7 +30,7 @@ export function accountFixture(code: string, type: AccountType) {
     name: code.replace(/_/g, ' '),
     type,
     createdAt: new Date('2026-09-01T00:00:00.000Z'),
-    archivedAt: null,
+    archivedAt,
   });
 }
 

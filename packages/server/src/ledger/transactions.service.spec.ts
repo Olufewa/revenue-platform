@@ -181,6 +181,18 @@ describe('TransactionsService', () => {
       );
     });
 
+    it('refuses entries to archived accounts', async () => {
+      accounts.findByCodes.mockResolvedValue([
+        accountFixture('cash', 'ASSET'),
+        accountFixture('vat_payable', 'LIABILITY'),
+        accountFixture('bundle_revenue', 'INCOME', new Date()),
+      ]);
+
+      await expect(sut.record(service, 'ord_1', sale)).rejects.toThrow(
+        'Archived account(s): bundle_revenue',
+      );
+    });
+
     it('propagates 404 for an unknown order', async () => {
       orders.findOne.mockRejectedValue(new NotFoundException());
 

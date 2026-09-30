@@ -271,6 +271,11 @@ export class TransactionsService {
       throw new BadRequestException(`Unknown account code(s): ${missing.join(', ')}`);
     }
 
+    const archived = accounts.filter((a) => a.isArchived).map((a) => a.code);
+    if (archived.length > 0) {
+      throw new BadRequestException(`Archived account(s): ${archived.join(', ')}`);
+    }
+
     return ids;
   }
 }

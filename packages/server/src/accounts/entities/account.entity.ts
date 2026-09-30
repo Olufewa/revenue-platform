@@ -11,6 +11,7 @@ export class AccountEntity {
     readonly name: string,
     readonly type: AccountType,
     readonly createdAt: Date,
+    readonly archivedAt: Date | null,
   ) {}
 
   static fromRecord(row: Account): AccountEntity {
@@ -21,6 +22,7 @@ export class AccountEntity {
       row.name,
       row.type,
       row.createdAt,
+      row.archivedAt,
     );
   }
 
@@ -30,6 +32,10 @@ export class AccountEntity {
    */
   static normalBalance(type: AccountType, debitMinor: bigint, creditMinor: bigint): bigint {
     return DEBIT_NORMAL.has(type) ? debitMinor - creditMinor : creditMinor - debitMinor;
+  }
+
+  get isArchived(): boolean {
+    return this.archivedAt !== null;
   }
 
   normalBalance(debitMinor: bigint, creditMinor: bigint): bigint {
@@ -42,6 +48,8 @@ export class AccountEntity {
       code: this.code,
       name: this.name,
       type: this.type,
+      archived: this.isArchived,
+      archivedAt: this.archivedAt,
       createdAt: this.createdAt,
     };
   }
