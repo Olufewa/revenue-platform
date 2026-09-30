@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AccountRepository } from '../accounts/account.repository.js';
+import { ListPageDto } from '../common/list-page.dto.js';
 import { assertSameRequest, requestHash } from '../common/request-hash.js';
 import { Currency } from '../money/currency.js';
 import { ExchangeRate } from '../money/exchange-rate.js';
@@ -33,12 +34,12 @@ export class TransactionsService {
   ) {}
 
   /**
-   * Records a balanced transaction against an order. Resending the identical
-   * request returns the original; reusing its externalId for a different
-   * request is a 422.
+   * Records a balanced transaction, against an order or on its own (fees,
+   * settlements, adjustments). Resending the identical request returns the
+   * original; reusing its externalId for a different request is a 422.
    */
-  async record(service: ServiceEntity, orderId: string, dto: CreateTransactionDto) {
-    const order = await this.orders.findOne(service.id, orderId);
+  async record(service: ServiceEntity, orderId: string | null, dto: CreateTransactionDto) {
+    const order = orderId ? await this.orders.findOne(service.id, orderId) : null;
     const hash = requestHash({ ...dto, orderId });
 
     const existing = await this.findExistingFor(service.id, dto.externalId, orderId, hash);
@@ -46,7 +47,11 @@ export class TransactionsService {
       return { duplicate: true, transaction: existing };
     }
 
-    const currency = dto.currency ? Currency.of(dto.currency) : order.total.currency;
+    if (!dto.currency && !order) {
+      throw new BadRequestException('currency is required when the transaction has no order');
+    }
+
+    const currency = dto.currency ? Currency.of(dto.currency) : order!.total.currency;
     const draft = this.build(() =>
       buildTransaction({
         currency,
@@ -65,7 +70,7 @@ export class TransactionsService {
     try {
       const transaction = await this.transactions.create({
         serviceId: service.id,
-        orderId: order.id,
+        orderId,
         externalId: dto.externalId,
         description: dto.description,
         currency: draft.currency,
@@ -143,6 +148,20 @@ export class TransactionsService {
     return transaction;
   }
 
+  async list(serviceId: string, query: ListPageDto) {
+    const page = await this.transactions.listPage(serviceId, {
+      limit: query.limit ?? 20,
+      cursor: query.cursor,
+    });
+
+    return { transactions: page.items, nextCursor: page.nextCursor };
+  }
+
+  async listForUser(serviceId: string, userId: string, query: ListPageDto) {
+    await this.services.assertCanAccess(serviceId, userId);
+    return this.list(serviceId, query);
+  }
+
   async listForOrder(serviceId: string, orderId: string) {
     await this.orders.findOne(serviceId, orderId);
     return this.transactions.listForOrder(serviceId, orderId);
@@ -161,14 +180,16 @@ export class TransactionsService {
   private async findExistingFor(
     serviceId: string,
     externalId: string,
-    orderId: string,
+    orderId: string | null,
     hash: string,
   ): Promise<LedgerTransactionEntity | null> {
     const existing = await this.transactions.findByExternalId(serviceId, externalId);
 
     if (existing && existing.orderId !== orderId) {
       throw new ConflictException(
-        `externalId "${externalId}" is already used by a transaction on another order`,
+        `externalId "${externalId}" is already used by a transaction ${
+          existing.orderId ? 'on another order' : 'without an order'
+        }`,
       );
     }
 

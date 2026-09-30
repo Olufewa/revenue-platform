@@ -63,3 +63,11 @@ export class CreateTransactionDto {
   @Type(() => EntryLegDto)
   entries!: EntryLegDto[];
 }
+
+/** `POST /transactions`: the order is optional, e.g. for fees or settlements. */
+export class CreateStandaloneTransactionDto extends CreateTransactionDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  orderId?: string;
+}

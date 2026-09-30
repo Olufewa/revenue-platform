@@ -158,6 +158,27 @@ describe('TransactionsService', () => {
       );
     });
 
+    it('records a transaction without an order when a currency is given', async () => {
+      await sut.record(service, null, {
+        ...sale,
+        currency: 'NGN',
+        entries: [
+          { accountCode: 'cash', direction: 'CREDIT', amount: 5000 },
+          { accountCode: 'bundle_revenue', direction: 'DEBIT', amount: 5000 },
+        ],
+      });
+
+      expect(orders.findOne).not.toHaveBeenCalled();
+      expect(created().orderId).toBeNull();
+      expect(created().currency.code).toBe('NGN');
+    });
+
+    it('requires a currency when there is no order', async () => {
+      await expect(sut.record(service, null, sale)).rejects.toThrow(
+        'currency is required when the transaction has no order',
+      );
+    });
+
     it('propagates 404 for an unknown order', async () => {
       orders.findOne.mockRejectedValue(new NotFoundException());
 

@@ -1,8 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ListPageDto } from '../common/list-page.dto.js';
 import { ApiKeyGuard } from '../services/api-key.guard.js';
 import { CurrentService } from '../services/current-service.decorator.js';
 import type { ServiceEntity } from '../services/entities/service.entity.js';
-import { CreateTransactionDto } from './dto/create-transaction.dto.js';
+import {
+  CreateStandaloneTransactionDto,
+  CreateTransactionDto,
+} from './dto/create-transaction.dto.js';
 import { ReverseTransactionDto } from './dto/reverse-transaction.dto.js';
 import { TransactionsService } from './transactions.service.js';
 
@@ -23,6 +27,20 @@ export class TransactionsController {
   @Get('orders/:orderId/transactions')
   listForOrder(@Param('orderId') orderId: string, @CurrentService() service: ServiceEntity) {
     return this.transactions.listForOrder(service.id, orderId);
+  }
+
+  @Post('transactions')
+  recordStandalone(
+    @Body() dto: CreateStandaloneTransactionDto,
+    @CurrentService() service: ServiceEntity,
+  ) {
+    const { orderId, ...body } = dto;
+    return this.transactions.record(service, orderId ?? null, body);
+  }
+
+  @Get('transactions')
+  list(@Query() query: ListPageDto, @CurrentService() service: ServiceEntity) {
+    return this.transactions.list(service.id, query);
   }
 
   @Get('transactions/:id')

@@ -175,6 +175,37 @@ describe('revenue tracker (e2e)', () => {
     }
   });
 
+  it('records a payment fee without an order', async () => {
+    await request(http)
+      .post(`/services/${serviceId}/accounts`)
+      .set('Authorization', bearer)
+      .send({ code: 'payment_fees', name: 'Payment fees', type: 'EXPENSE' })
+      .expect(201);
+
+    const fee = {
+      externalId: `fee-${stamp}`,
+      occurredAt: '2026-09-16T18:00:00.000Z',
+      currency: 'NGN',
+      entries: [
+        { accountCode: 'payment_fees', direction: 'DEBIT', amount: 5000 },
+        { accountCode: 'cash', direction: 'CREDIT', amount: 5000 },
+      ],
+    };
+
+    const res = await request(http).post('/transactions').set('x-api-key', apiKey).send(fee).expect(201);
+    expect(res.body.transaction.orderId).toBeNull();
+
+    const { currency: _omit, ...withoutCurrency } = fee;
+    await request(http)
+      .post('/transactions')
+      .set('x-api-key', apiKey)
+      .send({ ...withoutCurrency, externalId: `fee2-${stamp}` })
+      .expect(400);
+
+    const list = await request(http).get('/transactions').set('x-api-key', apiKey).expect(200);
+    expect(list.body.transactions.some((t: { id: string }) => t.id === res.body.transaction.id)).toBe(true);
+  });
+
   it('reverses a transaction exactly once', async () => {
     const res = await request(http)
       .post(`/transactions/${saleId}/reverse`)
@@ -206,7 +237,8 @@ describe('revenue tracker (e2e)', () => {
       res.body.accounts.find((a: { accountCode: string }) => a.accountCode === code).balance.amount;
 
     expect(res.body.totals.debit).toEqual(res.body.totals.credit);
-    expect(balance('cash')).toBe('1913009');
+    expect(balance('cash')).toBe('1908009');
+    expect(balance('payment_fees')).toBe('5000');
     expect(balance('vat_payable')).toBe('0');
     expect(balance('bundle_revenue')).toBe('1913009');
   });

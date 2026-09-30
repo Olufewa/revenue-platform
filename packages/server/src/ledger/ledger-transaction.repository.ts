@@ -4,6 +4,7 @@ import type { Currency } from '../money/currency.js';
 import type { ExchangeRate } from '../money/exchange-rate.js';
 import type { Money } from '../money/money.js';
 import type { DbClient } from '../prisma/db-client.js';
+import type { Page } from '../prisma/page.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LedgerTransactionEntity } from './entities/ledger-transaction.entity.js';
 
@@ -59,6 +60,27 @@ export class LedgerTransactionRepository {
       include: INCLUDE,
     });
     return row && LedgerTransactionEntity.fromRecord(row);
+  }
+
+  /** Newest first, cursor-paged by id. */
+  async listPage(
+    serviceId: string,
+    opts: { limit: number; cursor?: string },
+  ): Promise<Page<LedgerTransactionEntity>> {
+    const rows = await this.db.ledgerTransaction.findMany({
+      where: { serviceId },
+      include: INCLUDE,
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+      take: opts.limit + 1,
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
+    });
+
+    const page = rows.slice(0, opts.limit);
+
+    return {
+      items: page.map((row) => LedgerTransactionEntity.fromRecord(row)),
+      nextCursor: rows.length > opts.limit ? page[page.length - 1].id : null,
+    };
   }
 
   async listForOrder(serviceId: string, orderId: string): Promise<LedgerTransactionEntity[]> {

@@ -1,4 +1,5 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { ListPageDto } from '../common/list-page.dto.js';
 import { AuthGuard } from '../identity/auth.guard.js';
 import { CurrentUser } from '../identity/current-user.decorator.js';
 import { TransactionsService } from './transactions.service.js';
@@ -15,6 +16,15 @@ export class ServiceTransactionsController {
     @CurrentUser() user: { sub: string },
   ) {
     return this.transactions.listForOrderForUser(serviceId, user.sub, orderId);
+  }
+
+  @Get('transactions')
+  list(
+    @Param('serviceId') serviceId: string,
+    @Query() query: ListPageDto,
+    @CurrentUser() user: { sub: string },
+  ) {
+    return this.transactions.listForUser(serviceId, user.sub, query);
   }
 
   @Get('transactions/:id')

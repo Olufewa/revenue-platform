@@ -11,6 +11,8 @@ import { TransactionsService } from './transactions.service.js';
 describe('Transactions controllers', () => {
   const transactions = {
     record: vi.fn(),
+    list: vi.fn(),
+    listForUser: vi.fn(),
     reverse: vi.fn(),
     findOne: vi.fn(),
     listForOrder: vi.fn(),
@@ -126,6 +128,55 @@ describe('Transactions controllers', () => {
     });
   });
 
+  describe('POST /transactions', () => {
+    it('records a transaction without an order', async () => {
+      transactions.record.mockResolvedValue({ duplicate: false, transaction: transactionFixture() });
+
+      await request(t.app.getHttpServer())
+        .post('/transactions')
+        .set('x-api-key', apiKey)
+        .send({ ...sale, currency: 'NGN' })
+        .expect(201);
+
+      const [, orderId, dto] = transactions.record.mock.calls[0];
+      expect(orderId).toBeNull();
+      expect(dto).toEqual({ ...sale, currency: 'NGN' });
+    });
+
+    it('passes an orderId from the body through', async () => {
+      transactions.record.mockResolvedValue({ duplicate: false, transaction: transactionFixture() });
+
+      await request(t.app.getHttpServer())
+        .post('/transactions')
+        .set('x-api-key', apiKey)
+        .send({ ...sale, orderId: 'ord_1' })
+        .expect(201);
+
+      const [, orderId, dto] = transactions.record.mock.calls[0];
+      expect(orderId).toBe('ord_1');
+      expect(dto).not.toHaveProperty('orderId');
+    });
+
+    it('rejects orderId in the body of the order-scoped route', async () => {
+      await request(t.app.getHttpServer())
+        .post('/orders/ord_1/transactions')
+        .set('x-api-key', apiKey)
+        .send({ ...sale, orderId: 'ord_2' })
+        .expect(400);
+    });
+  });
+
+  it('GET /transactions lists them with paging', async () => {
+    transactions.list.mockResolvedValue({ transactions: [], nextCursor: null });
+
+    await request(t.app.getHttpServer())
+      .get('/transactions?limit=5')
+      .set('x-api-key', apiKey)
+      .expect(200);
+
+    expect(transactions.list).toHaveBeenCalledWith(service.id, { limit: 5 });
+  });
+
   it('GET /orders/:orderId/transactions lists them', async () => {
     transactions.listForOrder.mockResolvedValue([transactionFixture()]);
 
@@ -198,6 +249,17 @@ describe('Transactions controllers', () => {
         .expect(200);
 
       expect(transactions.listForOrderForUser).toHaveBeenCalledWith('svc_1', 'usr_1', 'ord_1');
+    });
+
+    it('GET /services/:serviceId/transactions', async () => {
+      transactions.listForUser.mockResolvedValue({ transactions: [], nextCursor: null });
+
+      await request(t.app.getHttpServer())
+        .get('/services/svc_1/transactions')
+        .set('Authorization', t.bearer('usr_1'))
+        .expect(200);
+
+      expect(transactions.listForUser).toHaveBeenCalledWith('svc_1', 'usr_1', {});
     });
 
     it('GET /services/:serviceId/transactions/:id', async () => {
