@@ -63,7 +63,6 @@
     "supertest": "^7.0.0",
     "typescript": "^6.0.2",
     "unplugin-swc": "^2.0.0",
-    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.2"
   }
 }
