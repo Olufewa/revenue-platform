@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AccountRepository } from '../accounts/account.repository.js';
+import { assertSameRequest, requestHash } from '../common/request-hash.js';
 import { Currency } from '../money/currency.js';
 import { ExchangeRate } from '../money/exchange-rate.js';
 import { Money } from '../money/money.js';
@@ -32,13 +33,15 @@ export class TransactionsService {
   ) {}
 
   /**
-   * Records a balanced transaction against an order. Resending the same
-   * externalId for the same order returns the original.
+   * Records a balanced transaction against an order. Resending the identical
+   * request returns the original; reusing its externalId for a different
+   * request is a 422.
    */
   async record(service: ServiceEntity, orderId: string, dto: CreateTransactionDto) {
     const order = await this.orders.findOne(service.id, orderId);
+    const hash = requestHash({ ...dto, orderId });
 
-    const existing = await this.findExistingFor(service.id, dto.externalId, orderId);
+    const existing = await this.findExistingFor(service.id, dto.externalId, orderId, hash);
     if (existing) {
       return { duplicate: true, transaction: existing };
     }
@@ -67,6 +70,7 @@ export class TransactionsService {
         description: dto.description,
         currency: draft.currency,
         exchangeRate: draft.exchangeRate,
+        requestHash: hash,
         occurredAt: new Date(dto.occurredAt),
         entries: draft.entries.map((entry) => ({
           ...entry,
@@ -78,7 +82,7 @@ export class TransactionsService {
     } catch (error) {
       if (!isUniqueViolation(error)) throw error;
 
-      const raced = await this.findExistingFor(service.id, dto.externalId, orderId);
+      const raced = await this.findExistingFor(service.id, dto.externalId, orderId, hash);
       return { duplicate: true, transaction: raced! };
     }
   }
@@ -86,6 +90,7 @@ export class TransactionsService {
   /** Cancels a transaction with its mirror image. Each can be reversed once. */
   async reverse(service: ServiceEntity, transactionId: string, dto: ReverseTransactionDto) {
     const original = await this.findOne(service.id, transactionId);
+    const hash = requestHash({ ...dto, reverses: original.id });
 
     const existing = await this.transactions.findByExternalId(service.id, dto.externalId);
     if (existing) {
@@ -94,6 +99,7 @@ export class TransactionsService {
           `externalId "${dto.externalId}" is already used by another transaction`,
         );
       }
+      assertSameRequest(existing.requestHash, hash, dto.externalId);
       return { duplicate: true, transaction: existing };
     }
 
@@ -113,6 +119,7 @@ export class TransactionsService {
         description: dto.description ?? `Reversal of ${original.externalId}`,
         currency: original.currency,
         exchangeRate: original.exchangeRate,
+        requestHash: hash,
         occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : new Date(),
         reversesTransactionId: original.id,
         entries: original.reversalEntries(),
@@ -155,6 +162,7 @@ export class TransactionsService {
     serviceId: string,
     externalId: string,
     orderId: string,
+    hash: string,
   ): Promise<LedgerTransactionEntity | null> {
     const existing = await this.transactions.findByExternalId(serviceId, externalId);
 
@@ -162,6 +170,10 @@ export class TransactionsService {
       throw new ConflictException(
         `externalId "${externalId}" is already used by a transaction on another order`,
       );
+    }
+
+    if (existing) {
+      assertSameRequest(existing.requestHash, hash, externalId);
     }
 
     return existing;

@@ -1,4 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { requestHash } from '../common/request-hash.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServicesService } from '../services/services.service.js';
 import { orderFixture } from '../test/fixtures.js';
@@ -42,6 +43,34 @@ describe('OrdersService', () => {
     orders.findByExternalId.mockResolvedValue(existing);
 
     await expect(sut.create('svc_1', dto)).resolves.toEqual({ duplicate: true, order: existing });
+    expect(orders.create).not.toHaveBeenCalled();
+  });
+
+  it('stores a hash of the request', async () => {
+    orders.findByExternalId.mockResolvedValue(null);
+    orders.create.mockResolvedValue(orderFixture());
+
+    await sut.create('svc_1', dto);
+
+    expect(orders.create.mock.calls[0][0].requestHash).toBe(requestHash(dto));
+  });
+
+  it('accepts an identical retry', async () => {
+    const existing = orderFixture({ requestHash: requestHash(dto) });
+    orders.findByExternalId.mockResolvedValue(existing);
+
+    await expect(sut.create('svc_1', { ...dto })).resolves.toEqual({
+      duplicate: true,
+      order: existing,
+    });
+  });
+
+  it('refuses a reused externalId with a different amount (422)', async () => {
+    orders.findByExternalId.mockResolvedValue(orderFixture({ requestHash: requestHash(dto) }));
+
+    await expect(sut.create('svc_1', { ...dto, amount: 1 })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
     expect(orders.create).not.toHaveBeenCalled();
   });
 

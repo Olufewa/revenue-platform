@@ -32,7 +32,9 @@ export function accountFixture(code: string, type: AccountType) {
   });
 }
 
-export function orderFixture(overrides: { id?: string; amount?: bigint; currency?: string } = {}) {
+export function orderFixture(
+  overrides: { id?: string; amount?: bigint; currency?: string; requestHash?: string | null } = {},
+) {
   return OrderEntity.fromRecord({
     id: overrides.id ?? 'ord_1',
     serviceId: 'svc_1',
@@ -42,7 +44,7 @@ export function orderFixture(overrides: { id?: string; amount?: bigint; currency
     description: '1GB data bundle',
     customerRef: '+2348030001234',
     metadata: null,
-    requestHash: null,
+    requestHash: overrides.requestHash ?? null,
     placedAt: new Date('2026-09-15T12:00:00.000Z'),
     createdAt: new Date('2026-09-15T12:00:01.000Z'),
   });

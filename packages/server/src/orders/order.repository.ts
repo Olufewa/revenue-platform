@@ -13,6 +13,7 @@ export type NewOrder = {
   description?: string;
   customerRef?: string;
   metadata?: Record<string, unknown>;
+  requestHash: string;
   placedAt: Date;
 };
 
@@ -66,6 +67,7 @@ export class OrderRepository {
         description: order.description,
         customerRef: order.customerRef,
         metadata: order.metadata as Prisma.InputJsonValue | undefined,
+        requestHash: order.requestHash,
         placedAt: order.placedAt,
       },
     });

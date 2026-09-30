@@ -23,6 +23,7 @@ export type NewLedgerTransaction = {
   description?: string;
   currency: Currency;
   exchangeRate: ExchangeRate;
+  requestHash: string;
   occurredAt: Date;
   reversesTransactionId?: string;
   entries: Array<{
@@ -79,6 +80,7 @@ export class LedgerTransactionRepository {
         description: txn.description,
         currency: txn.currency.code,
         exchangeRate: txn.exchangeRate.toString(),
+        requestHash: txn.requestHash,
         occurredAt: txn.occurredAt,
         reversesTransactionId: txn.reversesTransactionId,
         entries: {

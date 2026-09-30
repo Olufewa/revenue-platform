@@ -2,7 +2,9 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
+import { requestHash } from '../common/request-hash.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AccountRepository } from '../accounts/account.repository.js';
 import type { OrdersService } from '../orders/orders.service.js';
@@ -107,6 +109,29 @@ describe('TransactionsService', () => {
       expect(transactions.create).not.toHaveBeenCalled();
     });
 
+    it('refuses a reused externalId with different entries (422)', async () => {
+      transactions.findByExternalId.mockResolvedValue(
+        transactionFixture({ requestHash: requestHash({ ...sale, orderId: 'ord_1' }) }),
+      );
+      const changed = { ...sale, description: 'edited' };
+
+      await expect(sut.record(service, 'ord_1', changed)).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+    });
+
+    it('accepts an identical retry', async () => {
+      const original = transactionFixture({
+        requestHash: requestHash({ ...sale, orderId: 'ord_1' }),
+      });
+      transactions.findByExternalId.mockResolvedValue(original);
+
+      await expect(sut.record(service, 'ord_1', sale)).resolves.toEqual({
+        duplicate: true,
+        transaction: original,
+      });
+    });
+
     it('refuses an externalId already used on another order', async () => {
       transactions.findByExternalId.mockResolvedValue(transactionFixture({ orderId: 'ord_2' }));
 
@@ -195,6 +220,21 @@ describe('TransactionsService', () => {
         duplicate: true,
         transaction: reversal,
       });
+    });
+
+    it('refuses a reused reversal externalId with a different body (422)', async () => {
+      transactions.findInService.mockResolvedValue(transactionFixture({ reversedById: 'txn_2' }));
+      transactions.findByExternalId.mockResolvedValue(
+        transactionFixture({
+          id: 'txn_2',
+          reversesTransactionId: 'txn_1',
+          requestHash: requestHash({ ...dto, reverses: 'txn_1' }),
+        }),
+      );
+
+      await expect(
+        sut.reverse(service, 'txn_1', { ...dto, description: 'different' }),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
 
     it('returns 404 for an unknown transaction', async () => {

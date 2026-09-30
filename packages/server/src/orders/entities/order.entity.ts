@@ -11,6 +11,7 @@ export class OrderEntity {
     readonly description: string | null,
     readonly customerRef: string | null,
     readonly metadata: unknown,
+    readonly requestHash: string | null,
     readonly placedAt: Date,
     readonly createdAt: Date,
   ) {}
@@ -24,6 +25,7 @@ export class OrderEntity {
       row.description,
       row.customerRef,
       row.metadata,
+      row.requestHash,
       row.placedAt,
       row.createdAt,
     );

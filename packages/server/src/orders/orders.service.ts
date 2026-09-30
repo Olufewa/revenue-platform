@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ListPageDto } from '../common/list-page.dto.js';
+import { assertSameRequest, requestHash } from '../common/request-hash.js';
 import { Money } from '../money/money.js';
 import { isUniqueViolation } from '../prisma/db-client.js';
 import { ServicesService } from '../services/services.service.js';
@@ -13,11 +14,16 @@ export class OrdersService {
     private readonly services: ServicesService,
   ) {}
 
-  /** Records an order once; resending the same externalId returns the original. */
+  /**
+   * Records an order once. Resending the identical request returns the
+   * original; reusing its externalId for a different request is a 422.
+   */
   async create(serviceId: string, dto: CreateOrderDto) {
+    const hash = requestHash(dto);
     const existing = await this.orders.findByExternalId(serviceId, dto.externalId);
 
     if (existing) {
+      assertSameRequest(existing.requestHash, hash, dto.externalId);
       return { duplicate: true, order: existing };
     }
 
@@ -29,6 +35,7 @@ export class OrdersService {
         description: dto.description,
         customerRef: dto.customerRef,
         metadata: dto.metadata,
+        requestHash: hash,
         placedAt: new Date(dto.placedAt),
       });
 
@@ -38,8 +45,9 @@ export class OrdersService {
         throw error;
       }
 
-      const raced = await this.orders.findByExternalId(serviceId, dto.externalId);
-      return { duplicate: true, order: raced! };
+      const raced = (await this.orders.findByExternalId(serviceId, dto.externalId))!;
+      assertSameRequest(raced.requestHash, hash, dto.externalId);
+      return { duplicate: true, order: raced };
     }
   }
 

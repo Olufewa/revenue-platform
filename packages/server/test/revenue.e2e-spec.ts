@@ -108,6 +108,15 @@ describe('revenue tracker (e2e)', () => {
 
     const again = await request(http).post('/orders').set('x-api-key', apiKey).send(body).expect(201);
     expect(again.body).toMatchObject({ duplicate: true, order: { id: orderId } });
+
+    // Key order doesn't matter, but content does.
+    const reordered = Object.fromEntries(Object.entries(body).reverse());
+    await request(http).post('/orders').set('x-api-key', apiKey).send(reordered).expect(201);
+    await request(http)
+      .post('/orders')
+      .set('x-api-key', apiKey)
+      .send({ ...body, amount: 1 })
+      .expect(422);
   });
 
   it('records a balanced sale and rejects bad ones', async () => {
@@ -130,6 +139,12 @@ describe('revenue tracker (e2e)', () => {
       .send(sale)
       .expect(201);
     expect(dup.body).toMatchObject({ duplicate: true, transaction: { id: saleId } });
+
+    await request(http)
+      .post(`/orders/${orderId}/transactions`)
+      .set('x-api-key', apiKey)
+      .send({ ...sale, description: 'edited' })
+      .expect(422);
 
     await request(http)
       .post(`/orders/${orderId}/transactions`)
