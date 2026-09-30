@@ -41,8 +41,21 @@ npx prisma generate
 npm run start:dev
 ```
 
-The API listens on the `PORT` set in `.env`, defaulting to 3003.
+The API listens on the `PORT` set in `.env`, defaulting to 3003. Interactive
+API docs are at `/docs` (raw OpenAPI at `/docs-json`).
 See `docs/03-run-and-verify.md` for the full check list.
+
+### Tests
+
+```bash
+npm test            # unit + controller specs, no database
+npm run test:e2e    # full flow against real Postgres
+```
+
+`test:e2e` creates a throwaway database on the server in `TEST_DATABASE_URL`
+(default: `DATABASE_URL`'s server), applies every migration to it, runs the
+Postman flow through the real app, and drops it again. Your dev database is
+never touched. The user needs `CREATEDB`.
 
 ## Modules
 
@@ -72,11 +85,13 @@ All routes are under `http://localhost:3003`.
 | POST | `/auth/register` | — | 201 the new user |
 | POST | `/auth/login` | — | 200 `{ access_token }` |
 
+Both are limited to 5 requests per IP per minute (429 after that).
+
 ### Services and API keys
 
 | Method | Route | Auth | Returns |
 |---|---|---|---|
-| POST | `/services` | Bearer | 201 the new service; body `{ name, baseCurrency }` |
+| POST | `/services` | Bearer | 201 the new service; body `{ name, baseCurrency, timezone? }` |
 | GET | `/services` | Bearer | 200 your services (all of them, if ADMIN) |
 | GET | `/services/:id` | Bearer | 200, 404 unknown, 403 not yours |
 | DELETE | `/services/:id` | Bearer + ADMIN | 204 |
@@ -91,6 +106,7 @@ All routes are under `http://localhost:3003`.
 |---|---|---|---|
 | POST | `/services/:id/accounts` | Bearer | 201; 409 on a duplicate code |
 | GET | `/services/:id/accounts` | Bearer | 200 the chart of accounts |
+| PATCH | `/services/:id/accounts/:code` | Bearer | 200; `{ name?, archived? }` |
 
 ### Orders and transactions
 
@@ -100,12 +116,17 @@ All routes are under `http://localhost:3003`.
 | GET | `/orders` | `x-api-key` | 200 cursor-paged orders |
 | GET | `/orders/:id` | `x-api-key` | 200, 404 outside the key's service |
 | POST | `/orders/:orderId/transactions` | `x-api-key` | 201 `{ duplicate, transaction }`; 400 unless balanced |
+| POST | `/transactions` | `x-api-key` | 201; optional `orderId`, for fees and settlements |
+| GET | `/transactions` | `x-api-key` | 200 cursor-paged transactions |
 | GET | `/orders/:orderId/transactions` | `x-api-key` | 200 the order's transactions |
+| GET | `/orders/:orderId/summary` | `x-api-key` | 200 income recognised vs. order total |
 | GET | `/transactions/:id` | `x-api-key` | 200 with entries |
 | POST | `/transactions/:id/reverse` | `x-api-key` | 201 the mirror transaction; 409 if already reversed |
 | GET | `/services/:id/orders` | Bearer | 200 the human view |
 | GET | `/services/:id/orders/:orderId` | Bearer | 200 |
 | GET | `/services/:id/orders/:orderId/transactions` | Bearer | 200 |
+| GET | `/services/:id/orders/:orderId/summary` | Bearer | 200 |
+| GET | `/services/:id/transactions` | Bearer | 200 cursor-paged |
 | GET | `/services/:id/transactions/:txnId` | Bearer | 200 |
 
 ### Reports
@@ -113,7 +134,11 @@ All routes are under `http://localhost:3003`.
 | Method | Route | Auth | Returns |
 |---|---|---|---|
 | GET | `/services/:id/balances?asOf=` | Bearer | 200 trial balance in base currency |
-| GET | `/services/:id/reports/revenue?from=&to=` | Bearer | 200 net income per day in base currency |
+| GET | `/services/:id/reports/revenue?from=&to=` | Bearer | 200 net income per local day (service timezone), base currency |
+
+Resending an order or transaction with the same `externalId` and the same
+body returns the original (`duplicate: true`). The same `externalId` with a
+different body is a **422**.
 
 Amounts are integers of the smallest currency unit — `250000` is ₦2,500.00 in
 kobo. They are accepted as numbers and returned as Money,

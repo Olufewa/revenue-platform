@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "MTN Revenue Platform",
-    "description": "API collection for the MTN Revenue Platform.\n\n1. Identity (register, login, conflict and wrong-password checks)\n2. Services & API keys (base currency, keys, whoami, revocation, RBAC)\n3. Chart of accounts (per-service accounts, duplicate and validation checks)\n4. Orders (intake over x-api-key, idempotency, validation)\n5. Ledger transactions (balanced entries, idempotency, imbalance and FX checks, reversal)\n6. Reports (trial balance, daily revenue in base currency)\n\n### How to run:\n1. Apply migrations and start the server: in `packages/server`, run `npm run db:migrate` then `npm run start:dev`\n2. In Postman, click **Import** and select this file\n3. Click **Run collection**. Each run creates a fresh user and service, so runs don't interfere.",
+    "description": "API collection for the MTN Revenue Platform.\n\n1. Identity (register, login, conflict and wrong-password checks)\n2. Services & API keys (base currency, keys, whoami, revocation, RBAC)\n3. Chart of accounts (per-service accounts, duplicate and validation checks)\n4. Orders (intake over x-api-key, idempotency, validation)\n5. Ledger transactions (balanced entries, idempotency, imbalance and FX checks, reversal)\n6. Reports (trial balance, daily revenue in base currency)\n\n### How to run:\n1. Apply migrations and start the server: in `packages/server`, run `npm run db:migrate` then `npm run start:dev`\n2. In Postman, click **Import** and select this file\n3. Click **Run collection**. Each run creates a fresh user and service, so runs don't interfere.\n\nRegister and login are rate-limited to 5 requests per IP per minute and each run makes 4, so wait a minute between runs.\nInteractive API docs are served at `{{baseUrl}}/docs`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -294,6 +294,7 @@
                   "    pm.expect(json.id).to.be.a('string');",
                   "    pm.expect(json.slug).to.match(/^mtn-airtime-service-[0-9a-f]{8}$/);",
                   "    pm.expect(json.baseCurrency).to.eql('NGN');",
+                  "    pm.expect(json.timezone).to.eql('Africa/Lagos');",
                   "    pm.collectionVariables.set('serviceId', json.id);",
                   "    pm.collectionVariables.set('serviceSlug', json.slug);",
                   "});"
@@ -311,7 +312,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"MTN Airtime Service\",\n  \"baseCurrency\": \"NGN\"\n}"
+              "raw": "{\n  \"name\": \"MTN Airtime Service\",\n  \"baseCurrency\": \"NGN\",\n  \"timezone\": \"Africa/Lagos\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/services",
@@ -861,7 +862,134 @@
           }
         },
         {
-          "name": "06 · List Accounts",
+          "name": "06 · Create Account payment_fees (EXPENSE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"payment_fees\",\n  \"name\": \"Payment fees\",\n  \"type\": \"EXPENSE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "07 · Create Account legacy_revenue (INCOME)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"legacy_revenue\",\n  \"name\": \"Legacy revenue\",\n  \"type\": \"INCOME\"\n}"
+            }
+          }
+        },
+        {
+          "name": "08 · Archive legacy_revenue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Account is archived', () => {",
+                  "    pm.expect(pm.response.json().archived).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/accounts/legacy_revenue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "accounts",
+                "legacy_revenue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"archived\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "09 · List Accounts",
           "event": [
             {
               "listen": "test",
@@ -873,8 +1001,9 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "pm.test('Chart contains the three accounts, sorted by code', () => {",
-                  "    pm.expect(json.map(a => a.code)).to.eql(['bundle_revenue', 'cash', 'vat_payable']);",
+                  "pm.test('Chart contains the accounts, sorted by code', () => {",
+                  "    pm.expect(json.map(a => a.code)).to.eql(['bundle_revenue', 'cash', 'legacy_revenue', 'payment_fees', 'vat_payable']);",
+                  "    pm.expect(json.find(a => a.code === 'legacy_revenue').archived).to.be.true;",
                   "});"
                 ]
               }
@@ -1060,7 +1189,56 @@
           }
         },
         {
-          "name": "04 · Create Order With Unknown Currency (Expect 400)",
+          "name": "04 · Reuse externalId With Different Amount (Expect 422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 422 Unprocessable Entity', () => {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "",
+                  "pm.test('Explains the externalId was reused', () => {",
+                  "    pm.expect(pm.response.json().message).to.include('different request');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"{{orderExternalId}}\",\n  \"amount\": 1,\n  \"currency\": \"NGN\",\n  \"placedAt\": \"2026-09-15T12:00:00.000Z\",\n  \"description\": \"1GB data bundle\",\n  \"customerRef\": \"+2348030001234\",\n  \"metadata\": {\n    \"channel\": \"ussd\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "05 · Create Order With Unknown Currency (Expect 400)",
           "event": [
             {
               "listen": "test",
@@ -1106,7 +1284,7 @@
           }
         },
         {
-          "name": "05 · List Orders via API Key",
+          "name": "06 · List Orders via API Key",
           "event": [
             {
               "listen": "test",
@@ -1154,7 +1332,7 @@
           }
         },
         {
-          "name": "06 · Get Order (Dashboard View)",
+          "name": "07 · Get Order (Dashboard View)",
           "event": [
             {
               "listen": "test",
@@ -1187,6 +1365,52 @@
                 "orders",
                 "{{orderId}}"
               ]
+            }
+          }
+        },
+        {
+          "name": "08 · Order Ledger Summary (Before Transactions)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Nothing recognised yet', () => {",
+                  "    pm.expect(json.transactionCount).to.eql(0);",
+                  "    pm.expect(json.fullyRecognised).to.be.false;",
+                  "    pm.expect(json.outstanding).to.eql({ amount: '350000', currency: 'NGN' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "summary"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
             }
           }
         }
@@ -1307,7 +1531,55 @@
           }
         },
         {
-          "name": "03 · Unbalanced Transaction (Expect 400)",
+          "name": "03 · Reuse Sale externalId With Different Entries (Expect 422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 422 Unprocessable Entity', () => {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "transactions"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"{{orderExternalId}}-sale\",\n  \"occurredAt\": \"2026-09-15T12:00:00.000Z\",\n  \"description\": \"edited\",\n  \"entries\": [\n    {\n      \"accountCode\": \"cash\",\n      \"direction\": \"DEBIT\",\n      \"amount\": 350000\n    },\n    {\n      \"accountCode\": \"vat_payable\",\n      \"direction\": \"CREDIT\",\n      \"amount\": 24419\n    },\n    {\n      \"accountCode\": \"bundle_revenue\",\n      \"direction\": \"CREDIT\",\n      \"amount\": 325581\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "04 · Unbalanced Transaction (Expect 400)",
           "event": [
             {
               "listen": "test",
@@ -1358,7 +1630,7 @@
           }
         },
         {
-          "name": "04 · Unknown Account Code (Expect 400)",
+          "name": "05 · Unknown Account Code (Expect 400)",
           "event": [
             {
               "listen": "test",
@@ -1409,7 +1681,7 @@
           }
         },
         {
-          "name": "05 · Foreign Currency Without Rate (Expect 400)",
+          "name": "06 · Foreign Currency Without Rate (Expect 400)",
           "event": [
             {
               "listen": "test",
@@ -1460,7 +1732,7 @@
           }
         },
         {
-          "name": "06 · Foreign Currency Transaction ($12.34 @ 1550.25)",
+          "name": "07 · Foreign Currency Transaction ($12.34 @ 1550.25)",
           "event": [
             {
               "listen": "test",
@@ -1478,6 +1750,7 @@
                   "    pm.expect(a.amount).to.eql({ amount: '1234', currency: 'USD' });",
                   "    pm.expect(a.baseAmount).to.eql({ amount: '1913009', currency: 'NGN' });",
                   "    pm.expect(b.baseAmount).to.eql(a.baseAmount);",
+                  "    pm.expect(json.transaction.rateSource).to.eql('CBN official 2026-09-16');",
                   "});"
                 ]
               }
@@ -1511,12 +1784,156 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"externalId\": \"{{orderExternalId}}-usd\",\n  \"occurredAt\": \"2026-09-16T09:00:00.000Z\",\n  \"currency\": \"USD\",\n  \"exchangeRate\": \"1550.25\",\n  \"description\": \"Top-up paid in dollars\",\n  \"entries\": [\n    {\n      \"accountCode\": \"cash\",\n      \"direction\": \"DEBIT\",\n      \"amount\": 1234\n    },\n    {\n      \"accountCode\": \"bundle_revenue\",\n      \"direction\": \"CREDIT\",\n      \"amount\": 1234\n    }\n  ]\n}"
+              "raw": "{\n  \"externalId\": \"{{orderExternalId}}-usd\",\n  \"occurredAt\": \"2026-09-16T09:00:00.000Z\",\n  \"currency\": \"USD\",\n  \"exchangeRate\": \"1550.25\",\n  \"description\": \"Top-up paid in dollars\",\n  \"entries\": [\n    {\n      \"accountCode\": \"cash\",\n      \"direction\": \"DEBIT\",\n      \"amount\": 1234\n    },\n    {\n      \"accountCode\": \"bundle_revenue\",\n      \"direction\": \"CREDIT\",\n      \"amount\": 1234\n    }\n  ],\n  \"rateSource\": \"CBN official 2026-09-16\"\n}"
             }
           }
         },
         {
-          "name": "07 · List Order Transactions",
+          "name": "08 · Record Fee Without an Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Standalone transaction has no order', () => {",
+                  "    pm.expect(pm.response.json().transaction.orderId).to.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transactions"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"{{orderExternalId}}-fee\",\n  \"occurredAt\": \"2026-09-16T18:00:00.000Z\",\n  \"currency\": \"NGN\",\n  \"description\": \"Payment provider fee\",\n  \"entries\": [\n    {\n      \"accountCode\": \"payment_fees\",\n      \"direction\": \"DEBIT\",\n      \"amount\": 5000\n    },\n    {\n      \"accountCode\": \"cash\",\n      \"direction\": \"CREDIT\",\n      \"amount\": 5000\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "09 · Standalone Transaction Without Currency (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transactions"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"no-currency\",\n  \"occurredAt\": \"2026-09-16T18:00:00.000Z\",\n  \"description\": \"Payment provider fee\",\n  \"entries\": [\n    {\n      \"accountCode\": \"payment_fees\",\n      \"direction\": \"DEBIT\",\n      \"amount\": 5000\n    },\n    {\n      \"accountCode\": \"cash\",\n      \"direction\": \"CREDIT\",\n      \"amount\": 5000\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "10 · Post to Archived Account (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Names the archived account', () => {",
+                  "    pm.expect(pm.response.json().message).to.include('legacy_revenue');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transactions"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalId\": \"archived\",\n  \"occurredAt\": \"2026-09-16T18:00:00.000Z\",\n  \"currency\": \"NGN\",\n  \"description\": \"Payment provider fee\",\n  \"entries\": [\n    {\n      \"accountCode\": \"cash\",\n      \"direction\": \"DEBIT\",\n      \"amount\": 100\n    },\n    {\n      \"accountCode\": \"legacy_revenue\",\n      \"direction\": \"CREDIT\",\n      \"amount\": 100\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "11 · List Order Transactions",
           "event": [
             {
               "listen": "test",
@@ -1559,7 +1976,7 @@
           }
         },
         {
-          "name": "08 · Reverse Sale Transaction",
+          "name": "12 · Reverse Sale Transaction",
           "event": [
             {
               "listen": "test",
@@ -1614,7 +2031,7 @@
           }
         },
         {
-          "name": "09 · Reverse Again (Expect 409)",
+          "name": "13 · Reverse Again (Expect 409)",
           "event": [
             {
               "listen": "test",
@@ -1662,7 +2079,7 @@
           }
         },
         {
-          "name": "10 · Get Original Transaction Shows Reversal Link",
+          "name": "14 · Get Original Transaction Shows Reversal Link",
           "event": [
             {
               "listen": "test",
@@ -1702,6 +2119,53 @@
               "type": "noauth"
             }
           }
+        },
+        {
+          "name": "15 · Order Ledger Summary (After Reversal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Only the USD top-up income remains', () => {",
+                  "    pm.expect(json.transactionCount).to.eql(3);",
+                  "    pm.expect(json.reversedCount).to.eql(1);",
+                  "    pm.expect(json.income.base).to.eql({ amount: '1913009', currency: 'NGN' });",
+                  "    pm.expect(json.fullyRecognised).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "summary"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
         }
       ]
     },
@@ -1725,9 +2189,10 @@
                   "pm.test('Debits equal credits', () => {",
                   "    pm.expect(json.totals.debit).to.eql(json.totals.credit);",
                   "});",
-                  "pm.test('Only the USD top-up remains after the sale was reversed', () => {",
+                  "pm.test('Sale reversed; USD top-up and the fee remain', () => {",
                   "    pm.expect(json.baseCurrency).to.eql('NGN');",
-                  "    pm.expect(bal('cash')).to.eql('1913009');",
+                  "    pm.expect(bal('cash')).to.eql('1908009');",
+                  "    pm.expect(bal('payment_fees')).to.eql('5000');",
                   "    pm.expect(bal('vat_payable')).to.eql('0');",
                   "    pm.expect(bal('bundle_revenue')).to.eql('1913009');",
                   "});"
@@ -1764,7 +2229,8 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "pm.test('Net revenue per day in base currency', () => {",
+                  "pm.test('Grouped by the service timezone', () => {\n    pm.expect(json.timezone).to.eql('Africa/Lagos');\n});",
+                  "pm.test('Net revenue per Lagos day in base currency', () => {",
                   "    const byDay = Object.fromEntries(json.series.map(s => [s.day, s.amount.amount]));",
                   "    pm.expect(byDay['2026-09-15']).to.eql('325581');",
                   "    pm.expect(byDay['2026-09-16']).to.eql('1913009');",
