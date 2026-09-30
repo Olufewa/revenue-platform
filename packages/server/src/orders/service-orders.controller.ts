@@ -1,9 +1,12 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ListPageDto } from '../common/list-page.dto.js';
 import { AuthGuard } from '../identity/auth.guard.js';
 import { CurrentUser } from '../identity/current-user.decorator.js';
 import { OrdersService } from './orders.service.js';
 
+@ApiTags('Orders')
+@ApiBearerAuth()
 @Controller('services/:serviceId/orders')
 @UseGuards(AuthGuard)
 export class ServiceOrdersController {

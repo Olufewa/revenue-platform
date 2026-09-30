@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { buildOpenApiDocument } from '../src/swagger.js';
 
 /**
  * The Postman flow against a real Postgres: every query, raw SQL statement and
@@ -328,5 +329,18 @@ describe('revenue tracker (e2e)', () => {
       '2026-09-17': '1587428',
     });
     expect(res.body.total).toEqual({ amount: '1913009', currency: 'NGN' });
+  });
+
+  it('publishes an OpenAPI document covering both auth schemes', () => {
+    const doc = buildOpenApiDocument(app);
+
+    expect(Object.keys(doc.components?.securitySchemes ?? {})).toEqual(
+      expect.arrayContaining(['bearer', 'api-key']),
+    );
+    expect(doc.paths['/orders/{orderId}/transactions']?.post?.security).toEqual([{ 'api-key': [] }]);
+    expect(doc.paths['/services/{serviceId}/balances']?.get?.security).toEqual([{ bearer: [] }]);
+    expect(doc.paths['/services/whoami']?.get?.security).toEqual(
+      expect.arrayContaining([{ 'api-key': [] }]),
+    );
   });
 });

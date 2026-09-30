@@ -1,9 +1,11 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { IdentityService } from './identity.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 
+@ApiTags('Identity')
 @Controller('auth')
 @UseGuards(ThrottlerGuard)
 export class IdentityController {

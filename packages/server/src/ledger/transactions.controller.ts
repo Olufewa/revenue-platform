@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { API_KEY_SCHEME } from '../swagger.js';
 import { ListPageDto } from '../common/list-page.dto.js';
 import { ApiKeyGuard } from '../services/api-key.guard.js';
 import { CurrentService } from '../services/current-service.decorator.js';
@@ -10,6 +12,8 @@ import {
 import { ReverseTransactionDto } from './dto/reverse-transaction.dto.js';
 import { TransactionsService } from './transactions.service.js';
 
+@ApiTags('Transactions')
+@ApiSecurity(API_KEY_SCHEME)
 @Controller()
 @UseGuards(ApiKeyGuard)
 export class TransactionsController {

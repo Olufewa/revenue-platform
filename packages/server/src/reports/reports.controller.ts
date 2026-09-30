@@ -1,10 +1,13 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../identity/auth.guard.js';
 import { CurrentUser } from '../identity/current-user.decorator.js';
 import { BalancesQueryDto } from './dto/balances-query.dto.js';
 import { DateRangeDto } from './dto/date-range.dto.js';
 import { ReportsService } from './reports.service.js';
 
+@ApiTags('Reports')
+@ApiBearerAuth()
 @Controller('services/:serviceId')
 @UseGuards(AuthGuard)
 export class ReportsController {

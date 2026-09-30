@@ -8,6 +8,8 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { API_KEY_SCHEME } from '../swagger.js';
 import { AuthGuard } from '../identity/auth.guard.js';
 import { CurrentUser } from '../identity/current-user.decorator.js';
 import { ServicesService } from './services.service.js';
@@ -19,6 +21,8 @@ import { CurrentService } from './current-service.decorator.js';
 import { RolesGuard } from './roles.guard.js';
 import { Roles } from './roles.decorator.js';
 
+@ApiTags('Services & API keys')
+@ApiBearerAuth()
 @Controller('services')
 export class ServicesController {
   constructor(
@@ -27,6 +31,7 @@ export class ServicesController {
   ) {}
 
   @Get('whoami')
+  @ApiSecurity(API_KEY_SCHEME)
   @UseGuards(ApiKeyGuard)
   whoami(@CurrentService() service: { id: string; slug: string; name: string }) {
     return { id: service.id, slug: service.slug, name: service.name };
