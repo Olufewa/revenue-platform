@@ -33,7 +33,9 @@ export class ServicesController {
   @Get('whoami')
   @ApiSecurity(API_KEY_SCHEME)
   @UseGuards(ApiKeyGuard)
-  whoami(@CurrentService() service: { id: string; slug: string; name: string }) {
+  whoami(
+    @CurrentService() service: { id: string; slug: string; name: string },
+  ) {
     return { id: service.id, slug: service.slug, name: service.name };
   }
 

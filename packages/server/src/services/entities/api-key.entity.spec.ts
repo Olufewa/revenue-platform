@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { ApiKeyEntity } from './api-key.entity.js';
 
 describe('ApiKeyEntity', () => {
-  const build = (overrides: { revokedAt?: Date | null; lastUsedAt?: Date | null } = {}) => {
+  const build = (
+    overrides: { revokedAt?: Date | null; lastUsedAt?: Date | null } = {},
+  ) => {
     const generated = ApiKeyEntity.generate();
     const key = ApiKeyEntity.fromRecord({
       id: 'key_1',
@@ -18,7 +20,9 @@ describe('ApiKeyEntity', () => {
   };
 
   it('generates keys in the sk_live_<publicId>_<secret> format', () => {
-    expect(ApiKeyEntity.generate().plainKey).toMatch(/^sk_live_[a-f0-9]{16}_[a-f0-9]{64}$/);
+    expect(ApiKeyEntity.generate().plainKey).toMatch(
+      /^sk_live_[a-f0-9]{16}_[a-f0-9]{64}$/,
+    );
   });
 
   it('parses its own keys and rejects malformed ones', () => {
@@ -34,7 +38,9 @@ describe('ApiKeyEntity', () => {
     const { secret } = ApiKeyEntity.parse(plainKey)!;
 
     expect(key.matchesSecret(secret)).toBe(true);
-    expect(key.matchesSecret(secret.replace(/.$/, (c) => (c === '0' ? '1' : '0')))).toBe(false);
+    expect(
+      key.matchesSecret(secret.replace(/.$/, (c) => (c === '0' ? '1' : '0'))),
+    ).toBe(false);
   });
 
   it('is inactive once revoked', () => {
@@ -46,8 +52,16 @@ describe('ApiKeyEntity', () => {
     const now = new Date('2026-09-29T12:00:00.000Z');
 
     expect(build().key.isUsageStale(now)).toBe(true);
-    expect(build({ lastUsedAt: new Date('2026-09-29T11:58:00.000Z') }).key.isUsageStale(now)).toBe(false);
-    expect(build({ lastUsedAt: new Date('2026-09-29T11:54:00.000Z') }).key.isUsageStale(now)).toBe(true);
+    expect(
+      build({
+        lastUsedAt: new Date('2026-09-29T11:58:00.000Z'),
+      }).key.isUsageStale(now),
+    ).toBe(false);
+    expect(
+      build({
+        lastUsedAt: new Date('2026-09-29T11:54:00.000Z'),
+      }).key.isUsageStale(now),
+    ).toBe(true);
   });
 
   it('serialises metadata without the secret hash', () => {

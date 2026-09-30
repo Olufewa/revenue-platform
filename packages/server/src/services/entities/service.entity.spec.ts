@@ -9,7 +9,9 @@ describe('ServiceEntity', () => {
   });
 
   it('strips accents and symbols and truncates long names', () => {
-    const slug = ServiceEntity.generateSlug('Café & Crème — a very long service name indeed');
+    const slug = ServiceEntity.generateSlug(
+      'Café & Crème — a very long service name indeed',
+    );
     const base = slug.slice(0, slug.lastIndexOf('-'));
 
     expect(base).toMatch(/^[a-z0-9-]+$/);

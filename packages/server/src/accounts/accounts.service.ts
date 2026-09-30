@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { isUniqueViolation } from '../prisma/db-client.js';
 import { ServicesService } from '../services/services.service.js';
 import { AccountRepository } from './account.repository.js';
@@ -26,7 +30,12 @@ export class AccountsService {
   }
 
   /** Renames and/or archives an account. Its code and type never change. */
-  async update(serviceId: string, userId: string, code: string, dto: UpdateAccountDto) {
+  async update(
+    serviceId: string,
+    userId: string,
+    code: string,
+    dto: UpdateAccountDto,
+  ) {
     await this.services.assertCanAccess(serviceId, userId);
 
     const account = await this.accounts.findByCode(serviceId, code);

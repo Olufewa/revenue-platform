@@ -21,10 +21,11 @@ export class Currency {
       throw new RangeError(`Unknown currency "${code}"`);
     }
 
-    const fractionDigits = new Intl.NumberFormat('en', {
-      style: 'currency',
-      currency: code,
-    }).resolvedOptions().maximumFractionDigits ?? 2;
+    const fractionDigits =
+      new Intl.NumberFormat('en', {
+        style: 'currency',
+        currency: code,
+      }).resolvedOptions().maximumFractionDigits ?? 2;
 
     const currency = new Currency(code, fractionDigits);
     Currency.cache.set(code, currency);

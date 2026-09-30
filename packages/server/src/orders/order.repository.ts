@@ -25,14 +25,20 @@ export class OrderRepository {
     return new OrderRepository(tx);
   }
 
-  async findByExternalId(serviceId: string, externalId: string): Promise<OrderEntity | null> {
+  async findByExternalId(
+    serviceId: string,
+    externalId: string,
+  ): Promise<OrderEntity | null> {
     const row = await this.db.order.findUnique({
       where: { serviceId_externalId: { serviceId, externalId } },
     });
     return row && OrderEntity.fromRecord(row);
   }
 
-  async findInService(serviceId: string, id: string): Promise<OrderEntity | null> {
+  async findInService(
+    serviceId: string,
+    id: string,
+  ): Promise<OrderEntity | null> {
     const row = await this.db.order.findFirst({ where: { id, serviceId } });
     return row && OrderEntity.fromRecord(row);
   }

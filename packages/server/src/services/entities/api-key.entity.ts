@@ -63,12 +63,15 @@ export class ApiKeyEntity {
     const presented = createHash('sha256').update(secret).digest();
     const stored = Buffer.from(this.secretHash, 'hex');
 
-    return presented.length === stored.length && timingSafeEqual(presented, stored);
+    return (
+      presented.length === stored.length && timingSafeEqual(presented, stored)
+    );
   }
 
   isUsageStale(now: Date): boolean {
     return (
-      !this.lastUsedAt || now.getTime() - this.lastUsedAt.getTime() > USAGE_STALE_MS
+      !this.lastUsedAt ||
+      now.getTime() - this.lastUsedAt.getTime() > USAGE_STALE_MS
     );
   }
 

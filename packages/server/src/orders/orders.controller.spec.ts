@@ -1,7 +1,19 @@
 import { NotFoundException } from '@nestjs/common';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTestApp, mockApiKey, type TestApp } from '../test/create-test-app.js';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+import {
+  createTestApp,
+  mockApiKey,
+  type TestApp,
+} from '../test/create-test-app.js';
 import { orderFixture } from '../test/fixtures.js';
 import { OrdersController } from './orders.controller.js';
 import { OrdersService } from './orders.service.js';
@@ -18,7 +30,11 @@ describe('Orders controllers', () => {
   let t: TestApp;
   let apiKey: string;
 
-  const service = { id: 'svc_1', slug: 'airtime-svc', name: 'MTN Airtime Service' };
+  const service = {
+    id: 'svc_1',
+    slug: 'airtime-svc',
+    name: 'MTN Airtime Service',
+  };
 
   const payload = {
     externalId: 'bundle-3500-1',
@@ -46,7 +62,10 @@ describe('Orders controllers', () => {
 
   describe('POST /orders', () => {
     it('records an order and returns its total as Money', async () => {
-      orders.create.mockResolvedValue({ duplicate: false, order: orderFixture() });
+      orders.create.mockResolvedValue({
+        duplicate: false,
+        order: orderFixture(),
+      });
 
       const res = await request(t.app.getHttpServer())
         .post('/orders')
@@ -56,11 +75,17 @@ describe('Orders controllers', () => {
 
       expect(orders.create).toHaveBeenCalledWith(service.id, payload);
       expect(res.body.duplicate).toBe(false);
-      expect(res.body.order.total).toEqual({ amount: '350000', currency: 'NGN' });
+      expect(res.body.order.total).toEqual({
+        amount: '350000',
+        currency: 'NGN',
+      });
     });
 
     it('passes duplicates through', async () => {
-      orders.create.mockResolvedValue({ duplicate: true, order: orderFixture() });
+      orders.create.mockResolvedValue({
+        duplicate: true,
+        order: orderFixture(),
+      });
 
       const res = await request(t.app.getHttpServer())
         .post('/orders')
@@ -88,7 +113,10 @@ describe('Orders controllers', () => {
     });
 
     it('returns 401 without x-api-key', async () => {
-      await request(t.app.getHttpServer()).post('/orders').send(payload).expect(401);
+      await request(t.app.getHttpServer())
+        .post('/orders')
+        .send(payload)
+        .expect(401);
     });
 
     it('returns 401 with a bearer token instead of an API key', async () => {
@@ -102,14 +130,20 @@ describe('Orders controllers', () => {
 
   describe('GET /orders', () => {
     it('lists orders with a numeric limit', async () => {
-      orders.list.mockResolvedValue({ orders: [orderFixture()], nextCursor: null });
+      orders.list.mockResolvedValue({
+        orders: [orderFixture()],
+        nextCursor: null,
+      });
 
       const res = await request(t.app.getHttpServer())
         .get('/orders?limit=10&cursor=ord_0')
         .set('x-api-key', apiKey)
         .expect(200);
 
-      expect(orders.list).toHaveBeenCalledWith(service.id, { limit: 10, cursor: 'ord_0' });
+      expect(orders.list).toHaveBeenCalledWith(service.id, {
+        limit: 10,
+        cursor: 'ord_0',
+      });
       expect(res.body.orders[0].id).toBe('ord_1');
     });
 
@@ -152,7 +186,9 @@ describe('Orders controllers', () => {
         .set('Authorization', t.bearer('usr_1'))
         .expect(200);
 
-      expect(orders.listForUser).toHaveBeenCalledWith('svc_1', 'usr_1', { limit: 5 });
+      expect(orders.listForUser).toHaveBeenCalledWith('svc_1', 'usr_1', {
+        limit: 5,
+      });
     });
 
     it('GET /services/:serviceId/orders/:orderId returns one order', async () => {
@@ -163,11 +199,17 @@ describe('Orders controllers', () => {
         .set('Authorization', t.bearer('usr_1'))
         .expect(200);
 
-      expect(orders.findOneForUser).toHaveBeenCalledWith('svc_1', 'usr_1', 'ord_1');
+      expect(orders.findOneForUser).toHaveBeenCalledWith(
+        'svc_1',
+        'usr_1',
+        'ord_1',
+      );
     });
 
     it('returns 401 without a bearer token', async () => {
-      await request(t.app.getHttpServer()).get('/services/svc_1/orders').expect(401);
+      await request(t.app.getHttpServer())
+        .get('/services/svc_1/orders')
+        .expect(401);
     });
   });
 });

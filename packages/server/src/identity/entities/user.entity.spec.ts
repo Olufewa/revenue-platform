@@ -20,7 +20,9 @@ describe('UserEntity', () => {
   });
 
   it('never serialises the password hash', async () => {
-    const json = JSON.parse(JSON.stringify(UserEntity.fromRecord(await record())));
+    const json = JSON.parse(
+      JSON.stringify(UserEntity.fromRecord(await record())),
+    );
 
     expect(json).toEqual({
       id: 'usr_1',

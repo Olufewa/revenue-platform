@@ -28,7 +28,10 @@ export class ApiKeyRepository {
     };
   }
 
-  async findInService(serviceId: string, id: string): Promise<ApiKeyEntity | null> {
+  async findInService(
+    serviceId: string,
+    id: string,
+  ): Promise<ApiKeyEntity | null> {
     const row = await this.db.apiKey.findFirst({ where: { id, serviceId } });
     return row && ApiKeyEntity.fromRecord(row);
   }

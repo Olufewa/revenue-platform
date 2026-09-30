@@ -1,6 +1,14 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { createTestApp, type TestApp } from '../test/create-test-app.js';
 import { IdentityController } from './identity.controller.js';
 import { IdentityService } from './identity.service.js';
@@ -40,7 +48,11 @@ describe('IdentityController', () => {
         .expect(201);
 
       expect(identity.register).toHaveBeenCalledWith(user);
-      expect(res.body).toEqual({ id: 'usr_1', email: user.email, name: user.name });
+      expect(res.body).toEqual({
+        id: 'usr_1',
+        email: user.email,
+        name: user.name,
+      });
       expect(res.body.passwordHash).toBeUndefined();
     });
 
@@ -104,5 +116,4 @@ describe('IdentityController', () => {
         .expect(400);
     });
   });
-
 });

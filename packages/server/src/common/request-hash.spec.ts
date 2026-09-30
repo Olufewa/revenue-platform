@@ -16,7 +16,9 @@ describe('requestHash', () => {
 
   it('is sensitive to array order and values', () => {
     expect(requestHash([1, 2])).not.toBe(requestHash([2, 1]));
-    expect(requestHash({ amount: 350000 })).not.toBe(requestHash({ amount: 350001 }));
+    expect(requestHash({ amount: 350000 })).not.toBe(
+      requestHash({ amount: 350001 }),
+    );
   });
 });
 
@@ -27,6 +29,8 @@ describe('assertSameRequest', () => {
   });
 
   it('refuses a reused externalId with a different body', () => {
-    expect(() => assertSameRequest('abc', 'def', 'order-1')).toThrow(UnprocessableEntityException);
+    expect(() => assertSameRequest('abc', 'def', 'order-1')).toThrow(
+      UnprocessableEntityException,
+    );
   });
 });

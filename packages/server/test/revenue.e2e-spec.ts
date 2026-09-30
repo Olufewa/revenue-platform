@@ -32,10 +32,16 @@ describe('revenue tracker (e2e)', () => {
   };
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
     await app.init();
     http = app.getHttpServer();
@@ -72,7 +78,10 @@ describe('revenue tracker (e2e)', () => {
       .expect(201);
     apiKey = key.body.key;
 
-    await request(http).get('/services/whoami').set('x-api-key', apiKey).expect(200);
+    await request(http)
+      .get('/services/whoami')
+      .set('x-api-key', apiKey)
+      .expect(200);
   });
 
   it('builds a chart of accounts', async () => {
@@ -104,16 +113,34 @@ describe('revenue tracker (e2e)', () => {
       metadata: { channel: 'ussd' },
     };
 
-    const first = await request(http).post('/orders').set('x-api-key', apiKey).send(body).expect(201);
+    const first = await request(http)
+      .post('/orders')
+      .set('x-api-key', apiKey)
+      .send(body)
+      .expect(201);
     orderId = first.body.order.id;
-    expect(first.body.order.total).toEqual({ amount: '350000', currency: 'NGN' });
+    expect(first.body.order.total).toEqual({
+      amount: '350000',
+      currency: 'NGN',
+    });
 
-    const again = await request(http).post('/orders').set('x-api-key', apiKey).send(body).expect(201);
-    expect(again.body).toMatchObject({ duplicate: true, order: { id: orderId } });
+    const again = await request(http)
+      .post('/orders')
+      .set('x-api-key', apiKey)
+      .send(body)
+      .expect(201);
+    expect(again.body).toMatchObject({
+      duplicate: true,
+      order: { id: orderId },
+    });
 
     // Key order doesn't matter, but content does.
     const reordered = Object.fromEntries(Object.entries(body).reverse());
-    await request(http).post('/orders').set('x-api-key', apiKey).send(reordered).expect(201);
+    await request(http)
+      .post('/orders')
+      .set('x-api-key', apiKey)
+      .send(reordered)
+      .expect(201);
     await request(http)
       .post('/orders')
       .set('x-api-key', apiKey)
@@ -129,18 +156,21 @@ describe('revenue tracker (e2e)', () => {
       .expect(201);
     saleId = res.body.transaction.id;
     // Debits are listed before credits.
-    expect(res.body.transaction.entries.map((e: { direction: string }) => e.direction)).toEqual([
-      'DEBIT',
-      'CREDIT',
-      'CREDIT',
-    ]);
+    expect(
+      res.body.transaction.entries.map(
+        (e: { direction: string }) => e.direction,
+      ),
+    ).toEqual(['DEBIT', 'CREDIT', 'CREDIT']);
 
     const dup = await request(http)
       .post(`/orders/${orderId}/transactions`)
       .set('x-api-key', apiKey)
       .send(sale)
       .expect(201);
-    expect(dup.body).toMatchObject({ duplicate: true, transaction: { id: saleId } });
+    expect(dup.body).toMatchObject({
+      duplicate: true,
+      transaction: { id: saleId },
+    });
 
     await request(http)
       .post(`/orders/${orderId}/transactions`)
@@ -151,7 +181,11 @@ describe('revenue tracker (e2e)', () => {
     await request(http)
       .post(`/orders/${orderId}/transactions`)
       .set('x-api-key', apiKey)
-      .send({ ...sale, externalId: `bad-${stamp}`, entries: [sale.entries[0], { ...sale.entries[2], amount: 1 }] })
+      .send({
+        ...sale,
+        externalId: `bad-${stamp}`,
+        entries: [sale.entries[0], { ...sale.entries[2], amount: 1 }],
+      })
       .expect(400);
   });
 
@@ -197,7 +231,11 @@ describe('revenue tracker (e2e)', () => {
       ],
     };
 
-    const res = await request(http).post('/transactions').set('x-api-key', apiKey).send(fee).expect(201);
+    const res = await request(http)
+      .post('/transactions')
+      .set('x-api-key', apiKey)
+      .send(fee)
+      .expect(201);
     expect(res.body.transaction.orderId).toBeNull();
 
     const { currency: _omit, ...withoutCurrency } = fee;
@@ -207,8 +245,15 @@ describe('revenue tracker (e2e)', () => {
       .send({ ...withoutCurrency, externalId: `fee2-${stamp}` })
       .expect(400);
 
-    const list = await request(http).get('/transactions').set('x-api-key', apiKey).expect(200);
-    expect(list.body.transactions.some((t: { id: string }) => t.id === res.body.transaction.id)).toBe(true);
+    const list = await request(http)
+      .get('/transactions')
+      .set('x-api-key', apiKey)
+      .expect(200);
+    expect(
+      list.body.transactions.some(
+        (t: { id: string }) => t.id === res.body.transaction.id,
+      ),
+    ).toBe(true);
   });
 
   it('blocks new entries to archived accounts but still allows reversals', async () => {
@@ -246,12 +291,17 @@ describe('revenue tracker (e2e)', () => {
       .set('x-api-key', apiKey)
       .send(promo(`promo2-${stamp}`))
       .expect(400);
-    expect(refused.body.message).toContain('Archived account(s): promo_revenue');
+    expect(refused.body.message).toContain(
+      'Archived account(s): promo_revenue',
+    );
 
     await request(http)
       .post(`/transactions/${recorded.body.transaction.id}/reverse`)
       .set('x-api-key', apiKey)
-      .send({ externalId: `promo-rev-${stamp}`, occurredAt: '2026-09-15T14:00:00.000Z' })
+      .send({
+        externalId: `promo-rev-${stamp}`,
+        occurredAt: '2026-09-15T14:00:00.000Z',
+      })
       .expect(201);
   });
 
@@ -259,7 +309,10 @@ describe('revenue tracker (e2e)', () => {
     const res = await request(http)
       .post(`/transactions/${saleId}/reverse`)
       .set('x-api-key', apiKey)
-      .send({ externalId: `rev-${stamp}`, occurredAt: '2026-09-17T10:00:00.000Z' })
+      .send({
+        externalId: `rev-${stamp}`,
+        occurredAt: '2026-09-17T10:00:00.000Z',
+      })
       .expect(201);
     expect(res.body.transaction.reversesTransactionId).toBe(saleId);
 
@@ -285,7 +338,10 @@ describe('revenue tracker (e2e)', () => {
     // Sale reversed; only the USD top-up's income remains.
     expect(res.body.transactionCount).toBe(3);
     expect(res.body.reversedCount).toBe(1);
-    expect(res.body.income.base).toEqual({ amount: '1913009', currency: 'NGN' });
+    expect(res.body.income.base).toEqual({
+      amount: '1913009',
+      currency: 'NGN',
+    });
     expect(res.body.income.byCurrency).toEqual(
       expect.arrayContaining([
         { amount: '0', currency: 'NGN' },
@@ -303,7 +359,9 @@ describe('revenue tracker (e2e)', () => {
       .expect(200);
 
     const balance = (code: string) =>
-      res.body.accounts.find((a: { accountCode: string }) => a.accountCode === code).balance.amount;
+      res.body.accounts.find(
+        (a: { accountCode: string }) => a.accountCode === code,
+      ).balance.amount;
 
     expect(res.body.totals.debit).toEqual(res.body.totals.credit);
     expect(balance('cash')).toBe('1908009');
@@ -315,12 +373,18 @@ describe('revenue tracker (e2e)', () => {
   it('reports net revenue per local day in the service timezone', async () => {
     const res = await request(http)
       .get(`/services/${serviceId}/reports/revenue`)
-      .query({ from: '2026-09-01T00:00:00.000Z', to: '2026-09-30T23:59:59.999Z' })
+      .query({
+        from: '2026-09-01T00:00:00.000Z',
+        to: '2026-09-30T23:59:59.999Z',
+      })
       .set('Authorization', bearer)
       .expect(200);
 
     const byDay = Object.fromEntries(
-      res.body.series.map((s: { day: string; amount: { amount: string } }) => [s.day, s.amount.amount]),
+      res.body.series.map((s: { day: string; amount: { amount: string } }) => [
+        s.day,
+        s.amount.amount,
+      ]),
     );
     // The USD top-up (23:30 UTC on the 16th) lands on the 17th, alongside the reversal.
     expect(res.body.timezone).toBe('Africa/Lagos');
@@ -337,8 +401,12 @@ describe('revenue tracker (e2e)', () => {
     expect(Object.keys(doc.components?.securitySchemes ?? {})).toEqual(
       expect.arrayContaining(['bearer', 'api-key']),
     );
-    expect(doc.paths['/orders/{orderId}/transactions']?.post?.security).toEqual([{ 'api-key': [] }]);
-    expect(doc.paths['/services/{serviceId}/balances']?.get?.security).toEqual([{ bearer: [] }]);
+    expect(doc.paths['/orders/{orderId}/transactions']?.post?.security).toEqual(
+      [{ 'api-key': [] }],
+    );
+    expect(doc.paths['/services/{serviceId}/balances']?.get?.security).toEqual([
+      { bearer: [] },
+    ]);
     expect(doc.paths['/services/whoami']?.get?.security).toEqual(
       expect.arrayContaining([{ 'api-key': [] }]),
     );

@@ -1,8 +1,20 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { ServiceEntity } from '../services/entities/service.entity.js';
-import { createTestApp, mockApiKey, type TestApp } from '../test/create-test-app.js';
+import {
+  createTestApp,
+  mockApiKey,
+  type TestApp,
+} from '../test/create-test-app.js';
 import { transactionFixture } from '../test/fixtures.js';
 import { ServiceTransactionsController } from './service-transactions.controller.js';
 import { TransactionsController } from './transactions.controller.js';
@@ -24,7 +36,11 @@ describe('Transactions controllers', () => {
   let t: TestApp;
   let apiKey: string;
 
-  const service = { id: 'svc_1', slug: 'airtime-svc', name: 'MTN Airtime Service' };
+  const service = {
+    id: 'svc_1',
+    slug: 'airtime-svc',
+    name: 'MTN Airtime Service',
+  };
 
   const sale = {
     externalId: 'sale-1',
@@ -83,7 +99,10 @@ describe('Transactions controllers', () => {
     });
 
     it('accepts a foreign currency with an exchange rate', async () => {
-      transactions.record.mockResolvedValue({ duplicate: false, transaction: transactionFixture() });
+      transactions.record.mockResolvedValue({
+        duplicate: false,
+        transaction: transactionFixture(),
+      });
 
       await request(t.app.getHttpServer())
         .post('/orders/ord_1/transactions')
@@ -94,9 +113,23 @@ describe('Transactions controllers', () => {
 
     it.each([
       ['a single entry', { entries: [sale.entries[0]] }],
-      ['a bad direction', { entries: [sale.entries[0], { ...sale.entries[1], direction: 'SIDEWAYS' }] }],
-      ['a zero amount', { entries: [sale.entries[0], { ...sale.entries[1], amount: 0 }] }],
-      ['a fractional amount', { entries: [sale.entries[0], { ...sale.entries[1], amount: 1.5 }] }],
+      [
+        'a bad direction',
+        {
+          entries: [
+            sale.entries[0],
+            { ...sale.entries[1], direction: 'SIDEWAYS' },
+          ],
+        },
+      ],
+      [
+        'a zero amount',
+        { entries: [sale.entries[0], { ...sale.entries[1], amount: 0 }] },
+      ],
+      [
+        'a fractional amount',
+        { entries: [sale.entries[0], { ...sale.entries[1], amount: 1.5 }] },
+      ],
       ['an unknown currency', { currency: 'XYZ' }],
       ['a malformed exchange rate', { currency: 'USD', exchangeRate: '1,550' }],
       ['a numeric exchange rate', { currency: 'USD', exchangeRate: 1550 }],
@@ -113,7 +146,9 @@ describe('Transactions controllers', () => {
 
     it('surfaces an unbalanced transaction as 400 with the reason', async () => {
       transactions.record.mockRejectedValue(
-        new BadRequestException('Debits (350000 NGN) do not equal credits (349999 NGN)'),
+        new BadRequestException(
+          'Debits (350000 NGN) do not equal credits (349999 NGN)',
+        ),
       );
 
       const res = await request(t.app.getHttpServer())
@@ -126,13 +161,19 @@ describe('Transactions controllers', () => {
     });
 
     it('returns 401 without x-api-key', async () => {
-      await request(t.app.getHttpServer()).post('/orders/ord_1/transactions').send(sale).expect(401);
+      await request(t.app.getHttpServer())
+        .post('/orders/ord_1/transactions')
+        .send(sale)
+        .expect(401);
     });
   });
 
   describe('POST /transactions', () => {
     it('records a transaction without an order', async () => {
-      transactions.record.mockResolvedValue({ duplicate: false, transaction: transactionFixture() });
+      transactions.record.mockResolvedValue({
+        duplicate: false,
+        transaction: transactionFixture(),
+      });
 
       await request(t.app.getHttpServer())
         .post('/transactions')
@@ -146,7 +187,10 @@ describe('Transactions controllers', () => {
     });
 
     it('passes an orderId from the body through', async () => {
-      transactions.record.mockResolvedValue({ duplicate: false, transaction: transactionFixture() });
+      transactions.record.mockResolvedValue({
+        duplicate: false,
+        transaction: transactionFixture(),
+      });
 
       await request(t.app.getHttpServer())
         .post('/transactions')
@@ -189,7 +233,11 @@ describe('Transactions controllers', () => {
       .set('Authorization', t.bearer('usr_1'))
       .expect(200);
 
-    expect(transactions.summaryForUser).toHaveBeenCalledWith('svc_1', 'usr_1', 'ord_1');
+    expect(transactions.summaryForUser).toHaveBeenCalledWith(
+      'svc_1',
+      'usr_1',
+      'ord_1',
+    );
   });
 
   it('GET /transactions lists them with paging', async () => {
@@ -230,7 +278,10 @@ describe('Transactions controllers', () => {
     it('reverses a transaction', async () => {
       transactions.reverse.mockResolvedValue({
         duplicate: false,
-        transaction: transactionFixture({ id: 'txn_2', reversesTransactionId: 'txn_1' }),
+        transaction: transactionFixture({
+          id: 'txn_2',
+          reversesTransactionId: 'txn_1',
+        }),
       });
 
       const res = await request(t.app.getHttpServer())
@@ -240,7 +291,9 @@ describe('Transactions controllers', () => {
         .expect(201);
 
       expect(transactions.reverse.mock.calls[0][1]).toBe('txn_1');
-      expect(transactions.reverse.mock.calls[0][2]).toEqual({ externalId: 'sale-1-reversal' });
+      expect(transactions.reverse.mock.calls[0][2]).toEqual({
+        externalId: 'sale-1-reversal',
+      });
       expect(res.body.transaction.reversesTransactionId).toBe('txn_1');
     });
 
@@ -274,18 +327,29 @@ describe('Transactions controllers', () => {
         .set('Authorization', t.bearer('usr_1'))
         .expect(200);
 
-      expect(transactions.listForOrderForUser).toHaveBeenCalledWith('svc_1', 'usr_1', 'ord_1');
+      expect(transactions.listForOrderForUser).toHaveBeenCalledWith(
+        'svc_1',
+        'usr_1',
+        'ord_1',
+      );
     });
 
     it('GET /services/:serviceId/transactions', async () => {
-      transactions.listForUser.mockResolvedValue({ transactions: [], nextCursor: null });
+      transactions.listForUser.mockResolvedValue({
+        transactions: [],
+        nextCursor: null,
+      });
 
       await request(t.app.getHttpServer())
         .get('/services/svc_1/transactions')
         .set('Authorization', t.bearer('usr_1'))
         .expect(200);
 
-      expect(transactions.listForUser).toHaveBeenCalledWith('svc_1', 'usr_1', {});
+      expect(transactions.listForUser).toHaveBeenCalledWith(
+        'svc_1',
+        'usr_1',
+        {},
+      );
     });
 
     it('GET /services/:serviceId/transactions/:id', async () => {
@@ -296,11 +360,17 @@ describe('Transactions controllers', () => {
         .set('Authorization', t.bearer('usr_1'))
         .expect(200);
 
-      expect(transactions.findOneForUser).toHaveBeenCalledWith('svc_1', 'usr_1', 'txn_1');
+      expect(transactions.findOneForUser).toHaveBeenCalledWith(
+        'svc_1',
+        'usr_1',
+        'txn_1',
+      );
     });
 
     it('returns 401 without a bearer token', async () => {
-      await request(t.app.getHttpServer()).get('/services/svc_1/transactions/txn_1').expect(401);
+      await request(t.app.getHttpServer())
+        .get('/services/svc_1/transactions/txn_1')
+        .expect(401);
     });
   });
 });

@@ -12,7 +12,11 @@ import { TransactionsService } from './transactions.service.js';
 @Module({
   imports: [IdentityModule, ServicesModule, AccountsModule, OrdersModule],
   controllers: [TransactionsController, ServiceTransactionsController],
-  providers: [TransactionsService, LedgerTransactionRepository, EntryRepository],
+  providers: [
+    TransactionsService,
+    LedgerTransactionRepository,
+    EntryRepository,
+  ],
   exports: [EntryRepository],
 })
 export class LedgerModule {}

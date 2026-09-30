@@ -66,7 +66,9 @@ describe('Money', () => {
   });
 
   it('sums a list', () => {
-    expect(Money.sum([Money.of(1, NGN), Money.of(2, NGN)], NGN).amountMinor).toBe(3n);
+    expect(
+      Money.sum([Money.of(1, NGN), Money.of(2, NGN)], NGN).amountMinor,
+    ).toBe(3n);
     expect(Money.sum([], NGN).isZero()).toBe(true);
   });
 
@@ -106,20 +108,29 @@ describe('Money', () => {
   describe('convert', () => {
     it('converts USD cents to NGN kobo', () => {
       // $12.34 at ₦1550.25 = ₦19,130.085 → rounds half up to ₦19,130.09
-      const ngn = Money.of(1234, USD).convert(NGN, ExchangeRate.parse('1550.25'));
+      const ngn = Money.of(1234, USD).convert(
+        NGN,
+        ExchangeRate.parse('1550.25'),
+      );
 
       expect(ngn.equals(Money.of(1913009, NGN))).toBe(true);
     });
 
     it('adjusts for currencies with different minor units', () => {
       // ₦1,000.00 at 0.0975 JPY per NGN = ¥97.5 → ¥98
-      const jpy = Money.of(100000, NGN).convert(JPY, ExchangeRate.parse('0.0975'));
+      const jpy = Money.of(100000, NGN).convert(
+        JPY,
+        ExchangeRate.parse('0.0975'),
+      );
 
       expect(jpy.equals(Money.of(98, JPY))).toBe(true);
     });
 
     it('rounds negative amounts half away from zero', () => {
-      const jpy = Money.of(-100000, NGN).convert(JPY, ExchangeRate.parse('0.0975'));
+      const jpy = Money.of(-100000, NGN).convert(
+        JPY,
+        ExchangeRate.parse('0.0975'),
+      );
 
       expect(jpy.amountMinor).toBe(-98n);
     });

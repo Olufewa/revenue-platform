@@ -30,8 +30,14 @@ export class AccountEntity {
    * Signed balance on the account's normal side: assets and expenses grow
    * with debits; liabilities, equity and income grow with credits.
    */
-  static normalBalance(type: AccountType, debitMinor: bigint, creditMinor: bigint): bigint {
-    return DEBIT_NORMAL.has(type) ? debitMinor - creditMinor : creditMinor - debitMinor;
+  static normalBalance(
+    type: AccountType,
+    debitMinor: bigint,
+    creditMinor: bigint,
+  ): bigint {
+    return DEBIT_NORMAL.has(type)
+      ? debitMinor - creditMinor
+      : creditMinor - debitMinor;
   }
 
   get isArchived(): boolean {

@@ -1,4 +1,9 @@
-import { INestApplication, Provider, Type, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  Provider,
+  Type,
+  ValidationPipe,
+} from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { createHash, randomBytes } from 'node:crypto';

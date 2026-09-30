@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../identity/auth.guard.js';
 import { CurrentUser } from '../identity/current-user.decorator.js';
@@ -33,7 +41,10 @@ export class AccountsController {
   }
 
   @Get()
-  list(@Param('serviceId') serviceId: string, @CurrentUser() user: { sub: string }) {
+  list(
+    @Param('serviceId') serviceId: string,
+    @CurrentUser() user: { sub: string },
+  ) {
     return this.accounts.list(serviceId, user.sub);
   }
 }

@@ -55,7 +55,10 @@ export class LedgerTransactionRepository {
     return row && LedgerTransactionEntity.fromRecord(row);
   }
 
-  async findInService(serviceId: string, id: string): Promise<LedgerTransactionEntity | null> {
+  async findInService(
+    serviceId: string,
+    id: string,
+  ): Promise<LedgerTransactionEntity | null> {
     const row = await this.db.ledgerTransaction.findFirst({
       where: { id, serviceId },
       include: INCLUDE,
@@ -84,7 +87,10 @@ export class LedgerTransactionRepository {
     };
   }
 
-  async listForOrder(serviceId: string, orderId: string): Promise<LedgerTransactionEntity[]> {
+  async listForOrder(
+    serviceId: string,
+    orderId: string,
+  ): Promise<LedgerTransactionEntity[]> {
     const rows = await this.db.ledgerTransaction.findMany({
       where: { serviceId, orderId },
       include: INCLUDE,

@@ -1,4 +1,7 @@
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { requestHash } from '../common/request-hash.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServicesService } from '../services/services.service.js';
@@ -7,7 +10,11 @@ import type { NewOrder, OrderRepository } from './order.repository.js';
 import { OrdersService } from './orders.service.js';
 
 describe('OrdersService', () => {
-  const orders = { findByExternalId: vi.fn(), findInService: vi.fn(), create: vi.fn() };
+  const orders = {
+    findByExternalId: vi.fn(),
+    findInService: vi.fn(),
+    create: vi.fn(),
+  };
   const services = { assertCanAccess: vi.fn() };
   let sut: OrdersService;
 
@@ -42,7 +49,10 @@ describe('OrdersService', () => {
     const existing = orderFixture();
     orders.findByExternalId.mockResolvedValue(existing);
 
-    await expect(sut.create('svc_1', dto)).resolves.toEqual({ duplicate: true, order: existing });
+    await expect(sut.create('svc_1', dto)).resolves.toEqual({
+      duplicate: true,
+      order: existing,
+    });
     expect(orders.create).not.toHaveBeenCalled();
   });
 
@@ -66,7 +76,9 @@ describe('OrdersService', () => {
   });
 
   it('refuses a reused externalId with a different amount (422)', async () => {
-    orders.findByExternalId.mockResolvedValue(orderFixture({ requestHash: requestHash(dto) }));
+    orders.findByExternalId.mockResolvedValue(
+      orderFixture({ requestHash: requestHash(dto) }),
+    );
 
     await expect(sut.create('svc_1', { ...dto, amount: 1 })).rejects.toThrow(
       UnprocessableEntityException,
@@ -76,15 +88,22 @@ describe('OrdersService', () => {
 
   it('treats a unique-violation race as a duplicate', async () => {
     const raced = orderFixture();
-    orders.findByExternalId.mockResolvedValueOnce(null).mockResolvedValueOnce(raced);
+    orders.findByExternalId
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(raced);
     orders.create.mockRejectedValue({ code: 'P2002' });
 
-    await expect(sut.create('svc_1', dto)).resolves.toEqual({ duplicate: true, order: raced });
+    await expect(sut.create('svc_1', dto)).resolves.toEqual({
+      duplicate: true,
+      order: raced,
+    });
   });
 
   it('throws 404 for an order on another service', async () => {
     orders.findInService.mockResolvedValue(null);
 
-    await expect(sut.findOne('svc_1', 'ord_x')).rejects.toThrow(NotFoundException);
+    await expect(sut.findOne('svc_1', 'ord_x')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

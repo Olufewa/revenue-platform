@@ -1,5 +1,13 @@
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { createTestApp, type TestApp } from '../test/create-test-app.js';
 import { ReportsController } from './reports.controller.js';
 import { ReportsService } from './reports.service.js';
@@ -27,7 +35,9 @@ describe('ReportsController', () => {
       .set('Authorization', t.bearer('usr_1'))
       .expect(200);
 
-    expect(reports.balances).toHaveBeenCalledWith('svc_1', 'usr_1', { asOf: '2026-09-30' });
+    expect(reports.balances).toHaveBeenCalledWith('svc_1', 'usr_1', {
+      asOf: '2026-09-30',
+    });
   });
 
   it('GET /services/:serviceId/balances returns 400 for a bad asOf', async () => {
@@ -59,6 +69,8 @@ describe('ReportsController', () => {
   });
 
   it('returns 401 without a bearer token', async () => {
-    await request(t.app.getHttpServer()).get('/services/svc_1/balances').expect(401);
+    await request(t.app.getHttpServer())
+      .get('/services/svc_1/balances')
+      .expect(401);
   });
 });

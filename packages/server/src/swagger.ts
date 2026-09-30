@@ -1,5 +1,9 @@
 import type { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
+import {
+  DocumentBuilder,
+  SwaggerModule,
+  type OpenAPIObject,
+} from '@nestjs/swagger';
 
 export const API_KEY_SCHEME = 'api-key';
 
@@ -13,7 +17,10 @@ export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
     )
     .setVersion('1.0')
     .addBearerAuth()
-    .addApiKey({ type: 'apiKey', in: 'header', name: 'x-api-key' }, API_KEY_SCHEME)
+    .addApiKey(
+      { type: 'apiKey', in: 'header', name: 'x-api-key' },
+      API_KEY_SCHEME,
+    )
     .build();
 
   return SwaggerModule.createDocument(app, config);

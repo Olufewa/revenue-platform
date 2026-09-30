@@ -7,7 +7,8 @@ export function IsCurrencyCode(options?: ValidationOptions): PropertyDecorator {
     {
       name: 'isCurrencyCode',
       validator: {
-        validate: (value) => typeof value === 'string' && Currency.isValid(value),
+        validate: (value) =>
+          typeof value === 'string' && Currency.isValid(value),
         defaultMessage: (args) =>
           `${args?.property} must be an ISO 4217 currency code like "NGN"`,
       },
@@ -21,7 +22,8 @@ export function IsExchangeRate(options?: ValidationOptions): PropertyDecorator {
     {
       name: 'isExchangeRate',
       validator: {
-        validate: (value) => typeof value === 'string' && ExchangeRate.isValid(value),
+        validate: (value) =>
+          typeof value === 'string' && ExchangeRate.isValid(value),
         defaultMessage: (args) =>
           `${args?.property} must be a positive decimal string like "1550.25"`,
       },

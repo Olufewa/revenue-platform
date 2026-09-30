@@ -1,6 +1,14 @@
 import { ConflictException } from '@nestjs/common';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { createTestApp, type TestApp } from '../test/create-test-app.js';
 import { accountFixture } from '../test/fixtures.js';
 import { AccountsController } from './accounts.controller.js';
@@ -34,7 +42,11 @@ describe('AccountsController', () => {
         .expect(201);
 
       expect(accounts.create).toHaveBeenCalledWith('svc_1', 'usr_1', cash);
-      expect(res.body).toMatchObject({ id: 'acc_cash', code: 'cash', type: 'ASSET' });
+      expect(res.body).toMatchObject({
+        id: 'acc_cash',
+        code: 'cash',
+        type: 'ASSET',
+      });
     });
 
     it.each([
@@ -53,7 +65,9 @@ describe('AccountsController', () => {
     });
 
     it('returns 409 for a duplicate code', async () => {
-      accounts.create.mockRejectedValue(new ConflictException('Account "cash" already exists'));
+      accounts.create.mockRejectedValue(
+        new ConflictException('Account "cash" already exists'),
+      );
 
       await request(t.app.getHttpServer())
         .post('/services/svc_1/accounts')
@@ -63,13 +77,18 @@ describe('AccountsController', () => {
     });
 
     it('returns 401 without a bearer token', async () => {
-      await request(t.app.getHttpServer()).post('/services/svc_1/accounts').send(cash).expect(401);
+      await request(t.app.getHttpServer())
+        .post('/services/svc_1/accounts')
+        .send(cash)
+        .expect(401);
     });
   });
 
   describe('PATCH /services/:serviceId/accounts/:code', () => {
     it('renames and archives', async () => {
-      accounts.update.mockResolvedValue(accountFixture('cash', 'ASSET', new Date()));
+      accounts.update.mockResolvedValue(
+        accountFixture('cash', 'ASSET', new Date()),
+      );
 
       const res = await request(t.app.getHttpServer())
         .patch('/services/svc_1/accounts/cash')
@@ -109,6 +128,9 @@ describe('AccountsController', () => {
       .expect(200);
 
     expect(accounts.list).toHaveBeenCalledWith('svc_1', 'usr_1');
-    expect(res.body.map((a: { code: string }) => a.code)).toEqual(['bundle_revenue', 'cash']);
+    expect(res.body.map((a: { code: string }) => a.code)).toEqual([
+      'bundle_revenue',
+      'cash',
+    ]);
   });
 });

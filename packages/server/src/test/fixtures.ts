@@ -22,7 +22,11 @@ export function serviceFixture(
   });
 }
 
-export function accountFixture(code: string, type: AccountType, archivedAt: Date | null = null) {
+export function accountFixture(
+  code: string,
+  type: AccountType,
+  archivedAt: Date | null = null,
+) {
   return AccountEntity.fromRecord({
     id: `acc_${code}`,
     serviceId: 'svc_1',
@@ -35,7 +39,12 @@ export function accountFixture(code: string, type: AccountType, archivedAt: Date
 }
 
 export function orderFixture(
-  overrides: { id?: string; amount?: bigint; currency?: string; requestHash?: string | null } = {},
+  overrides: {
+    id?: string;
+    amount?: bigint;
+    currency?: string;
+    requestHash?: string | null;
+  } = {},
 ) {
   return OrderEntity.fromRecord({
     id: overrides.id ?? 'ord_1',
@@ -52,10 +61,17 @@ export function orderFixture(
   });
 }
 
-type EntrySpec = { code: string; direction: 'DEBIT' | 'CREDIT'; amount: bigint; base?: bigint };
+type EntrySpec = {
+  code: string;
+  direction: 'DEBIT' | 'CREDIT';
+  amount: bigint;
+  base?: bigint;
+};
 
 export function transactionFixture(
-  overrides: Partial<Omit<LedgerTransactionRecord, 'entries' | 'service' | 'reversedBy'>> & {
+  overrides: Partial<
+    Omit<LedgerTransactionRecord, 'entries' | 'service' | 'reversedBy'>
+  > & {
     entries?: EntrySpec[];
     reversedById?: string;
     baseCurrency?: string;

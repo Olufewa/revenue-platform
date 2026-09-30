@@ -1,0 +1,24 @@
+{
+  "name": "revenue-platform",
+  "version": "1.0.0",
+  "description": "A revenue tracking and reconciliation service for MTN product teams.",
+  "homepage": "https://github.com/Olufewa/revenue-platform#readme",
+  "bugs": {
+    "url": "https://github.com/Olufewa/revenue-platform/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Olufewa/revenue-platform.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "workspaces":["packages/*"],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

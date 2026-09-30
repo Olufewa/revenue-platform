@@ -38,25 +38,42 @@ export class TransactionsService {
    * settlements, adjustments). Resending the identical request returns the
    * original; reusing its externalId for a different request is a 422.
    */
-  async record(service: ServiceEntity, orderId: string | null, dto: CreateTransactionDto) {
-    const order = orderId ? await this.orders.findOne(service.id, orderId) : null;
+  async record(
+    service: ServiceEntity,
+    orderId: string | null,
+    dto: CreateTransactionDto,
+  ) {
+    const order = orderId
+      ? await this.orders.findOne(service.id, orderId)
+      : null;
     const hash = requestHash({ ...dto, orderId });
 
-    const existing = await this.findExistingFor(service.id, dto.externalId, orderId, hash);
+    const existing = await this.findExistingFor(
+      service.id,
+      dto.externalId,
+      orderId,
+      hash,
+    );
     if (existing) {
       return { duplicate: true, transaction: existing };
     }
 
     if (!dto.currency && !order) {
-      throw new BadRequestException('currency is required when the transaction has no order');
+      throw new BadRequestException(
+        'currency is required when the transaction has no order',
+      );
     }
 
-    const currency = dto.currency ? Currency.of(dto.currency) : order!.total.currency;
+    const currency = dto.currency
+      ? Currency.of(dto.currency)
+      : order!.total.currency;
     const draft = this.build(() =>
       buildTransaction({
         currency,
         baseCurrency: service.baseCurrency,
-        exchangeRate: dto.exchangeRate ? ExchangeRate.parse(dto.exchangeRate) : undefined,
+        exchangeRate: dto.exchangeRate
+          ? ExchangeRate.parse(dto.exchangeRate)
+          : undefined,
         legs: dto.entries.map((leg) => ({
           accountCode: leg.accountCode,
           direction: leg.direction,
@@ -88,17 +105,29 @@ export class TransactionsService {
     } catch (error) {
       if (!isUniqueViolation(error)) throw error;
 
-      const raced = await this.findExistingFor(service.id, dto.externalId, orderId, hash);
+      const raced = await this.findExistingFor(
+        service.id,
+        dto.externalId,
+        orderId,
+        hash,
+      );
       return { duplicate: true, transaction: raced! };
     }
   }
 
   /** Cancels a transaction with its mirror image. Each can be reversed once. */
-  async reverse(service: ServiceEntity, transactionId: string, dto: ReverseTransactionDto) {
+  async reverse(
+    service: ServiceEntity,
+    transactionId: string,
+    dto: ReverseTransactionDto,
+  ) {
     const original = await this.findOne(service.id, transactionId);
     const hash = requestHash({ ...dto, reverses: original.id });
 
-    const existing = await this.transactions.findByExternalId(service.id, dto.externalId);
+    const existing = await this.transactions.findByExternalId(
+      service.id,
+      dto.externalId,
+    );
     if (existing) {
       if (existing.reversesTransactionId !== original.id) {
         throw new ConflictException(
@@ -159,7 +188,10 @@ export class TransactionsService {
    */
   async summary(service: ServiceEntity, orderId: string) {
     const order = await this.orders.findOne(service.id, orderId);
-    const transactions = await this.transactions.listForOrder(service.id, orderId);
+    const transactions = await this.transactions.listForOrder(
+      service.id,
+      orderId,
+    );
 
     const orderCurrency = order.total.currency;
     let base = Money.zero(service.baseCurrency);
@@ -169,7 +201,8 @@ export class TransactionsService {
       for (const entry of txn.entries) {
         if (entry.account.type !== 'INCOME') continue;
 
-        const sign = (m: Money) => (entry.direction === 'CREDIT' ? m : m.negate());
+        const sign = (m: Money) =>
+          entry.direction === 'CREDIT' ? m : m.negate();
         base = base.add(sign(entry.baseAmount));
 
         const code = entry.amount.currency.code;
@@ -178,7 +211,8 @@ export class TransactionsService {
       }
     }
 
-    const inOrderCurrency = byCurrency.get(orderCurrency.code) ?? Money.zero(orderCurrency);
+    const inOrderCurrency =
+      byCurrency.get(orderCurrency.code) ?? Money.zero(orderCurrency);
 
     return {
       order,
@@ -222,7 +256,11 @@ export class TransactionsService {
     return this.findOne(serviceId, id);
   }
 
-  async listForOrderForUser(serviceId: string, userId: string, orderId: string) {
+  async listForOrderForUser(
+    serviceId: string,
+    userId: string,
+    orderId: string,
+  ) {
     await this.services.assertCanAccess(serviceId, userId);
     return this.listForOrder(serviceId, orderId);
   }
@@ -233,7 +271,10 @@ export class TransactionsService {
     orderId: string | null,
     hash: string,
   ): Promise<LedgerTransactionEntity | null> {
-    const existing = await this.transactions.findByExternalId(serviceId, externalId);
+    const existing = await this.transactions.findByExternalId(
+      serviceId,
+      externalId,
+    );
 
     if (existing && existing.orderId !== orderId) {
       throw new ConflictException(
@@ -268,12 +309,16 @@ export class TransactionsService {
 
     const missing = codes.filter((code) => !ids.has(code));
     if (missing.length > 0) {
-      throw new BadRequestException(`Unknown account code(s): ${missing.join(', ')}`);
+      throw new BadRequestException(
+        `Unknown account code(s): ${missing.join(', ')}`,
+      );
     }
 
     const archived = accounts.filter((a) => a.isArchived).map((a) => a.code);
     if (archived.length > 0) {
-      throw new BadRequestException(`Archived account(s): ${archived.join(', ')}`);
+      throw new BadRequestException(
+        `Archived account(s): ${archived.join(', ')}`,
+      );
     }
 
     return ids;

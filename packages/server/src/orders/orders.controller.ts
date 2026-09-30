@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { API_KEY_SCHEME } from '../swagger.js';
 import { ListPageDto } from '../common/list-page.dto.js';
@@ -15,7 +23,10 @@ export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
   @Post()
-  create(@Body() dto: CreateOrderDto, @CurrentService() service: { id: string }) {
+  create(
+    @Body() dto: CreateOrderDto,
+    @CurrentService() service: { id: string },
+  ) {
     return this.orders.create(service.id, dto);
   }
 

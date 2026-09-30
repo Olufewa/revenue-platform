@@ -32,14 +32,34 @@ describe('ReportsService', () => {
     entries.sumBaseByAccount.mockResolvedValue([
       { accountId: 'acc_cash', direction: 'DEBIT', baseAmountMinor: 350000n },
       { accountId: 'acc_cash', direction: 'CREDIT', baseAmountMinor: 175000n },
-      { accountId: 'acc_vat_payable', direction: 'CREDIT', baseAmountMinor: 24419n },
-      { accountId: 'acc_vat_payable', direction: 'DEBIT', baseAmountMinor: 12209n },
-      { accountId: 'acc_bundle_revenue', direction: 'CREDIT', baseAmountMinor: 325581n },
-      { accountId: 'acc_bundle_revenue', direction: 'DEBIT', baseAmountMinor: 162791n },
+      {
+        accountId: 'acc_vat_payable',
+        direction: 'CREDIT',
+        baseAmountMinor: 24419n,
+      },
+      {
+        accountId: 'acc_vat_payable',
+        direction: 'DEBIT',
+        baseAmountMinor: 12209n,
+      },
+      {
+        accountId: 'acc_bundle_revenue',
+        direction: 'CREDIT',
+        baseAmountMinor: 325581n,
+      },
+      {
+        accountId: 'acc_bundle_revenue',
+        direction: 'DEBIT',
+        baseAmountMinor: 162791n,
+      },
     ]);
 
     const result = JSON.parse(
-      JSON.stringify(await sut.balances('svc_1', 'usr_1', { asOf: '2026-09-30T00:00:00.000Z' })),
+      JSON.stringify(
+        await sut.balances('svc_1', 'usr_1', {
+          asOf: '2026-09-30T00:00:00.000Z',
+        }),
+      ),
     );
 
     expect(entries.sumBaseByAccount).toHaveBeenCalledWith(
@@ -49,10 +69,12 @@ describe('ReportsService', () => {
     expect(result.baseCurrency).toBe('NGN');
     expect(
       Object.fromEntries(
-        result.accounts.map((a: { accountCode: string; balance: { amount: string } }) => [
-          a.accountCode,
-          a.balance.amount,
-        ]),
+        result.accounts.map(
+          (a: { accountCode: string; balance: { amount: string } }) => [
+            a.accountCode,
+            a.balance.amount,
+          ],
+        ),
       ),
     ).toEqual({
       bundle_revenue: '162790',

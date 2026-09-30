@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { API_KEY_SCHEME } from '../swagger.js';
 import { ListPageDto } from '../common/list-page.dto.js';
@@ -29,12 +37,18 @@ export class TransactionsController {
   }
 
   @Get('orders/:orderId/transactions')
-  listForOrder(@Param('orderId') orderId: string, @CurrentService() service: ServiceEntity) {
+  listForOrder(
+    @Param('orderId') orderId: string,
+    @CurrentService() service: ServiceEntity,
+  ) {
     return this.transactions.listForOrder(service.id, orderId);
   }
 
   @Get('orders/:orderId/summary')
-  summary(@Param('orderId') orderId: string, @CurrentService() service: ServiceEntity) {
+  summary(
+    @Param('orderId') orderId: string,
+    @CurrentService() service: ServiceEntity,
+  ) {
     return this.transactions.summary(service, orderId);
   }
 

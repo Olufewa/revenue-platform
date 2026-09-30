@@ -1,4 +1,8 @@
-import type { AccountType, Entry, EntryDirection } from '../../generated/prisma/client.js';
+import type {
+  AccountType,
+  Entry,
+  EntryDirection,
+} from '../../generated/prisma/client.js';
 import type { Currency } from '../../money/currency.js';
 import { Money } from '../../money/money.js';
 

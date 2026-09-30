@@ -26,7 +26,7 @@ packages/server/          the API
   src/orders/             order intake, idempotent on externalId
   src/ledger/             balanced accounting transactions and reversals
   src/reports/            trial balance and revenue report
-docs/                     one guide per module
+docs/                     user flow guide
 postman/                  importable request collection with assertions
 ```
 
@@ -43,7 +43,7 @@ npm run start:dev
 
 The API listens on the `PORT` set in `.env`, defaulting to 3003. Interactive
 API docs are at `/docs` (raw OpenAPI at `/docs-json`).
-See `docs/03-run-and-verify.md` for the full check list.
+See `docs/user-flow.md` for the end-to-end flow.
 
 ### Tests
 
@@ -69,10 +69,9 @@ never touched. The user needs `CREATEDB`.
 
 ## Concepts
 
-The code keeps comments to the non-obvious; the reasoning lives in `docs/`:
-
-- **[Service onboarding](docs/04-service-onboarding.md)**: humans use JWTs and machines use API keys, why keys are hashed with SHA-256, and why `lastUsedAt` is written coarsely.
-- **[Orders & ledger](docs/05-orders-and-ledger.md)**: Money in minor units, Fowler allocation, exchange rates as exact fractions, why a transaction must balance exactly, how base amounts stay balanced across currencies, and why corrections are reversals rather than edits.
+The code keeps comments to the non-obvious. For how a product team uses the
+platform, from sign-up to reports with example requests, see
+**[docs/user-flow.md](docs/user-flow.md)**.
 
 ## API
 

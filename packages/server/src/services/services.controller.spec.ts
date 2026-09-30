@@ -1,5 +1,13 @@
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import {
   asRole,
   createTestApp,
@@ -64,7 +72,11 @@ describe('ServicesController', () => {
       await request(t.app.getHttpServer())
         .post('/services')
         .set('Authorization', t.bearer('usr_1'))
-        .send({ name: service.name, baseCurrency: 'GHS', timezone: 'Africa/Accra' })
+        .send({
+          name: service.name,
+          baseCurrency: 'GHS',
+          timezone: 'Africa/Accra',
+        })
         .expect(201);
 
       expect(services.create).toHaveBeenCalledWith(
@@ -95,7 +107,10 @@ describe('ServicesController', () => {
       ['a missing base currency', {}],
       ['an unknown base currency', { baseCurrency: 'XYZ' }],
       ['a lowercase base currency', { baseCurrency: 'ngn' }],
-      ['an unknown timezone', { baseCurrency: 'NGN', timezone: 'Mars/Olympus_Mons' }],
+      [
+        'an unknown timezone',
+        { baseCurrency: 'NGN', timezone: 'Mars/Olympus_Mons' },
+      ],
     ])('returns 400 for %s', async (_label, extra) => {
       await request(t.app.getHttpServer())
         .post('/services')
@@ -195,7 +210,11 @@ describe('ServicesController', () => {
 
     it('DELETE /services/:id/keys/:keyId revokes the key', async () => {
       const revokedAt = new Date().toISOString();
-      apiKeys.revoke.mockResolvedValue({ id: 'key_1', active: false, revokedAt });
+      apiKeys.revoke.mockResolvedValue({
+        id: 'key_1',
+        active: false,
+        revokedAt,
+      });
 
       const res = await request(t.app.getHttpServer())
         .delete(`/services/${service.id}/keys/key_1`)

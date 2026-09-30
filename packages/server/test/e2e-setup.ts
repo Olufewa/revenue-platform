@@ -20,7 +20,9 @@ export default async function setup() {
   const admin = new URL(base);
   admin.pathname = '/postgres';
 
-  await withClient(admin.toString(), (c) => c.query(`CREATE DATABASE "${database}"`));
+  await withClient(admin.toString(), (c) =>
+    c.query(`CREATE DATABASE "${database}"`),
+  );
   process.env.DATABASE_URL = url.toString();
 
   try {
@@ -38,10 +40,15 @@ export default async function setup() {
 }
 
 async function dropDatabase(adminUrl: string, database: string) {
-  await withClient(adminUrl, (c) => c.query(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`));
+  await withClient(adminUrl, (c) =>
+    c.query(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`),
+  );
 }
 
-async function withClient(connectionString: string, fn: (client: pg.Client) => Promise<unknown>) {
+async function withClient(
+  connectionString: string,
+  fn: (client: pg.Client) => Promise<unknown>,
+) {
   const client = new pg.Client({ connectionString });
   await client.connect();
   try {

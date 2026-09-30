@@ -15,7 +15,13 @@ export class EntryRepository {
   async sumBaseByAccount(
     serviceId: string,
     asOf: Date,
-  ): Promise<Array<{ accountId: string; direction: EntryDirection; baseAmountMinor: bigint }>> {
+  ): Promise<
+    Array<{
+      accountId: string;
+      direction: EntryDirection;
+      baseAmountMinor: bigint;
+    }>
+  > {
     const grouped = await this.db.entry.groupBy({
       by: ['accountId', 'direction'],
       where: { serviceId, occurredAt: { lte: asOf } },

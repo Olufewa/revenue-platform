@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Currency } from '../money/currency.js';
 import { ExchangeRate } from '../money/exchange-rate.js';
 import { Money } from '../money/money.js';
-import { buildTransaction, InvalidTransactionError, type Leg } from './accounting-transaction.js';
+import {
+  buildTransaction,
+  InvalidTransactionError,
+  type Leg,
+} from './accounting-transaction.js';
 
 const NGN = Currency.of('NGN');
 const USD = Currency.of('USD');
@@ -21,14 +25,21 @@ const bundleSale = [
   leg('bundle_revenue', 'CREDIT', 325581),
 ];
 
-const sumBase = (entries: { direction: string; baseAmount: Money }[], direction: string) =>
+const sumBase = (
+  entries: { direction: string; baseAmount: Money }[],
+  direction: string,
+) =>
   entries
     .filter((e) => e.direction === direction)
     .reduce((sum, e) => sum + e.baseAmount.amountMinor, 0n);
 
 describe('buildTransaction', () => {
   it('accepts a balanced base-currency transaction at rate 1', () => {
-    const draft = buildTransaction({ currency: NGN, baseCurrency: NGN, legs: bundleSale });
+    const draft = buildTransaction({
+      currency: NGN,
+      baseCurrency: NGN,
+      legs: bundleSale,
+    });
 
     expect(draft.exchangeRate.isOne).toBe(true);
     expect(draft.entries.map((e) => e.baseAmount.amountMinor)).toEqual([
@@ -39,16 +50,23 @@ describe('buildTransaction', () => {
   });
 
   it('rejects debits that do not equal credits', () => {
-    const legs = [leg('cash', 'DEBIT', 350000), leg('bundle_revenue', 'CREDIT', 349999)];
+    const legs = [
+      leg('cash', 'DEBIT', 350000),
+      leg('bundle_revenue', 'CREDIT', 349999),
+    ];
 
-    expect(() => buildTransaction({ currency: NGN, baseCurrency: NGN, legs })).toThrow(
-      'Debits (350000 NGN) do not equal credits (349999 NGN)',
-    );
+    expect(() =>
+      buildTransaction({ currency: NGN, baseCurrency: NGN, legs }),
+    ).toThrow('Debits (350000 NGN) do not equal credits (349999 NGN)');
   });
 
   it('requires at least two entries on both sides', () => {
     expect(() =>
-      buildTransaction({ currency: NGN, baseCurrency: NGN, legs: [leg('cash', 'DEBIT', 1)] }),
+      buildTransaction({
+        currency: NGN,
+        baseCurrency: NGN,
+        legs: [leg('cash', 'DEBIT', 1)],
+      }),
     ).toThrow('at least two entries');
 
     expect(() =>
@@ -61,19 +79,25 @@ describe('buildTransaction', () => {
   });
 
   it('rejects entries outside the transaction currency', () => {
-    const legs = [leg('cash', 'DEBIT', 100, USD), leg('bundle_revenue', 'CREDIT', 100)];
+    const legs = [
+      leg('cash', 'DEBIT', 100, USD),
+      leg('bundle_revenue', 'CREDIT', 100),
+    ];
 
-    expect(() => buildTransaction({ currency: NGN, baseCurrency: NGN, legs })).toThrow(
-      InvalidTransactionError,
-    );
+    expect(() =>
+      buildTransaction({ currency: NGN, baseCurrency: NGN, legs }),
+    ).toThrow(InvalidTransactionError);
   });
 
   it('requires an exchange rate for a foreign currency', () => {
-    const legs = [leg('cash', 'DEBIT', 1234, USD), leg('bundle_revenue', 'CREDIT', 1234, USD)];
+    const legs = [
+      leg('cash', 'DEBIT', 1234, USD),
+      leg('bundle_revenue', 'CREDIT', 1234, USD),
+    ];
 
-    expect(() => buildTransaction({ currency: USD, baseCurrency: NGN, legs })).toThrow(
-      'exchangeRate is required to convert USD to base currency NGN',
-    );
+    expect(() =>
+      buildTransaction({ currency: USD, baseCurrency: NGN, legs }),
+    ).toThrow('exchangeRate is required to convert USD to base currency NGN');
   });
 
   it('rejects a non-1 rate for the base currency', () => {
@@ -105,6 +129,8 @@ describe('buildTransaction', () => {
 
     expect(sumBase(draft.entries, 'DEBIT')).toBe(1550333n);
     expect(sumBase(draft.entries, 'CREDIT')).toBe(1550333n);
-    expect(draft.entries.every((e) => e.baseAmount.currency === NGN)).toBe(true);
+    expect(draft.entries.every((e) => e.baseAmount.currency === NGN)).toBe(
+      true,
+    );
   });
 });

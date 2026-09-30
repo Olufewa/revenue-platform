@@ -20,7 +20,10 @@ export class OrdersService {
    */
   async create(serviceId: string, dto: CreateOrderDto) {
     const hash = requestHash(dto);
-    const existing = await this.orders.findByExternalId(serviceId, dto.externalId);
+    const existing = await this.orders.findByExternalId(
+      serviceId,
+      dto.externalId,
+    );
 
     if (existing) {
       assertSameRequest(existing.requestHash, hash, dto.externalId);
@@ -45,7 +48,10 @@ export class OrdersService {
         throw error;
       }
 
-      const raced = (await this.orders.findByExternalId(serviceId, dto.externalId))!;
+      const raced = (await this.orders.findByExternalId(
+        serviceId,
+        dto.externalId,
+      ))!;
       assertSameRequest(raced.requestHash, hash, dto.externalId);
       return { duplicate: true, order: raced };
     }

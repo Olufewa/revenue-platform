@@ -41,7 +41,9 @@ export function buildTransaction(input: {
   const { currency, baseCurrency, legs } = input;
 
   if (legs.length < 2) {
-    throw new InvalidTransactionError('A transaction needs at least two entries');
+    throw new InvalidTransactionError(
+      'A transaction needs at least two entries',
+    );
   }
 
   if (legs.some((leg) => !leg.amount.currency.equals(currency))) {
@@ -63,8 +65,14 @@ export function buildTransaction(input: {
     );
   }
 
-  const debitTotal = Money.sum(debits.map((l) => l.amount), currency);
-  const creditTotal = Money.sum(credits.map((l) => l.amount), currency);
+  const debitTotal = Money.sum(
+    debits.map((l) => l.amount),
+    currency,
+  );
+  const creditTotal = Money.sum(
+    credits.map((l) => l.amount),
+    currency,
+  );
 
   if (!debitTotal.equals(creditTotal)) {
     throw new InvalidTransactionError(

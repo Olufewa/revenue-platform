@@ -25,7 +25,9 @@ export class ReportsService {
     const accounts = await this.accounts.listForService(serviceId);
     const sums = await this.entries.sumBaseByAccount(serviceId, asOf);
 
-    const totals = new Map(accounts.map((a) => [a.id, { debit: 0n, credit: 0n }]));
+    const totals = new Map(
+      accounts.map((a) => [a.id, { debit: 0n, credit: 0n }]),
+    );
     for (const row of sums) {
       const t = totals.get(row.accountId);
       if (!t) continue;
@@ -68,9 +70,16 @@ export class ReportsService {
     const base = service.baseCurrency;
 
     const to = query.to ? new Date(query.to) : new Date();
-    const from = query.from ? new Date(query.from) : new Date(to.getTime() - DEFAULT_WINDOW_MS);
+    const from = query.from
+      ? new Date(query.from)
+      : new Date(to.getTime() - DEFAULT_WINDOW_MS);
 
-    const days = await this.entries.incomeByDay(serviceId, from, to, service.timezone);
+    const days = await this.entries.incomeByDay(
+      serviceId,
+      from,
+      to,
+      service.timezone,
+    );
     const series = days.map((d) => ({
       day: d.day.toISOString().slice(0, 10),
       amount: Money.of(BigInt(d.amountMinor), base),
@@ -81,7 +90,10 @@ export class ReportsService {
       timezone: service.timezone,
       window: { from: from.toISOString(), to: to.toISOString() },
       series,
-      total: Money.sum(series.map((s) => s.amount), base),
+      total: Money.sum(
+        series.map((s) => s.amount),
+        base,
+      ),
     };
   }
 }

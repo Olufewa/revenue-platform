@@ -27,7 +27,11 @@ export class ApiKeyGuard implements CanActivate {
 
     const found = await this.apiKeys.findByPublicIdWithService(parsed.publicId);
 
-    if (!found || !found.key.isActive || !found.key.matchesSecret(parsed.secret)) {
+    if (
+      !found ||
+      !found.key.isActive ||
+      !found.key.matchesSecret(parsed.secret)
+    ) {
       throw new UnauthorizedException('Invalid API key');
     }
 

@@ -27,7 +27,10 @@ export class Money {
   }
 
   static sum(values: Money[], currency: Currency | string): Money {
-    return values.reduce((total, value) => total.add(value), Money.zero(currency));
+    return values.reduce(
+      (total, value) => total.add(value),
+      Money.zero(currency),
+    );
   }
 
   add(other: Money): Money {
@@ -53,7 +56,10 @@ export class Money {
   }
 
   equals(other: Money): boolean {
-    return this.currency.equals(other.currency) && this.amountMinor === other.amountMinor;
+    return (
+      this.currency.equals(other.currency) &&
+      this.amountMinor === other.amountMinor
+    );
   }
 
   /**
@@ -103,7 +109,10 @@ export class Money {
   }
 
   toJSON() {
-    return { amount: this.amountMinor.toString(), currency: this.currency.code };
+    return {
+      amount: this.amountMinor.toString(),
+      currency: this.currency.code,
+    };
   }
 
   private assertSameCurrency(other: Money): void {
