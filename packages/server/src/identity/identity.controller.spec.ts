@@ -1,7 +1,9 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestApp, type TestApp } from '../test/create-test-app.js';
+import { AUTH_THROTTLE } from './auth-throttle.js';
 import { IdentityController } from './identity.controller.js';
 import { IdentityService } from './identity.service.js';
 
@@ -13,6 +15,8 @@ describe('IdentityController', () => {
     t = await createTestApp({
       controllers: [IdentityController],
       providers: [{ provide: IdentityService, useValue: identity }],
+      // Room for every test below; the real limit is exercised separately.
+      imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1_000 }])],
     });
   });
 
@@ -102,6 +106,33 @@ describe('IdentityController', () => {
         .post('/auth/login')
         .send({ email: 'nope', password: user.password })
         .expect(400);
+    });
+  });
+
+  describe('rate limiting', () => {
+    let limited: TestApp;
+
+    beforeAll(async () => {
+      limited = await createTestApp({
+        controllers: [IdentityController],
+        providers: [{ provide: IdentityService, useValue: identity }],
+        imports: [ThrottlerModule.forRoot(AUTH_THROTTLE)],
+      });
+    });
+
+    afterAll(() => limited.app.close());
+
+    it('allows five login attempts a minute, then returns 429', async () => {
+      identity.login.mockRejectedValue(new UnauthorizedException());
+      const attempt = () =>
+        request(limited.app.getHttpServer())
+          .post('/auth/login')
+          .send({ email: user.email, password: 'guess' });
+
+      for (let i = 0; i < 5; i++) {
+        await attempt().expect(401);
+      }
+      await attempt().expect(429);
     });
   });
 });
