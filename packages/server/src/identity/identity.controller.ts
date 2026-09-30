@@ -9,7 +9,6 @@ export class IdentityController {
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    console.log(dto);
     return this.identity.register(dto);
   }
 
