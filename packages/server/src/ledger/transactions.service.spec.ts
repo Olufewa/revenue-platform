@@ -197,6 +197,56 @@ describe('TransactionsService', () => {
     });
   });
 
+  describe('summary', () => {
+    it('reports income recognised against the order and what is outstanding', async () => {
+      transactions.listForOrder.mockResolvedValue([
+        // ₦3,500 sale (₦3,255.81 income), then half of it refunded.
+        transactionFixture(),
+        transactionFixture({
+          id: 'txn_2',
+          entries: [
+            { code: 'bundle_revenue', direction: 'DEBIT', amount: 162790n },
+            { code: 'vat_payable', direction: 'DEBIT', amount: 12210n },
+            { code: 'cash', direction: 'CREDIT', amount: 175000n },
+          ],
+        }),
+      ]);
+
+      const result = JSON.parse(JSON.stringify(await sut.summary(service, 'ord_1')));
+
+      expect(result.transactionCount).toBe(2);
+      expect(result.income.base).toEqual({ amount: '162791', currency: 'NGN' });
+      expect(result.income.byCurrency).toEqual([{ amount: '162791', currency: 'NGN' }]);
+      expect(result.outstanding).toEqual({ amount: '187209', currency: 'NGN' });
+      expect(result.fullyRecognised).toBe(false);
+    });
+
+    it('is fully recognised when income equals the order total', async () => {
+      transactions.listForOrder.mockResolvedValue([
+        transactionFixture({
+          entries: [
+            { code: 'cash', direction: 'DEBIT', amount: 350000n },
+            { code: 'bundle_revenue', direction: 'CREDIT', amount: 350000n },
+          ],
+        }),
+      ]);
+
+      const result = await sut.summary(service, 'ord_1');
+
+      expect(result.fullyRecognised).toBe(true);
+      expect(result.outstanding.isZero()).toBe(true);
+    });
+
+    it('reports zero income in base currency for an order with no transactions', async () => {
+      transactions.listForOrder.mockResolvedValue([]);
+
+      const result = await sut.summary(service, 'ord_1');
+
+      expect(result.income.base.toString()).toBe('0 NGN');
+      expect(result.transactionCount).toBe(0);
+    });
+  });
+
   describe('reverse', () => {
     const dto = { externalId: 'sale-1-reversal', occurredAt: '2026-09-16T09:00:00.000Z' };
 

@@ -227,6 +227,26 @@ describe('revenue tracker (e2e)', () => {
     expect(original.body.reversedByTransactionId).toBe(res.body.transaction.id);
   });
 
+  it('summarises what the order has recognised', async () => {
+    const res = await request(http)
+      .get(`/orders/${orderId}/summary`)
+      .set('x-api-key', apiKey)
+      .expect(200);
+
+    // Sale reversed; only the USD top-up's income remains.
+    expect(res.body.transactionCount).toBe(3);
+    expect(res.body.reversedCount).toBe(1);
+    expect(res.body.income.base).toEqual({ amount: '1913009', currency: 'NGN' });
+    expect(res.body.income.byCurrency).toEqual(
+      expect.arrayContaining([
+        { amount: '0', currency: 'NGN' },
+        { amount: '1234', currency: 'USD' },
+      ]),
+    );
+    expect(res.body.outstanding).toEqual({ amount: '350000', currency: 'NGN' });
+    expect(res.body.fullyRecognised).toBe(false);
+  });
+
   it('produces a balanced trial balance', async () => {
     const res = await request(http)
       .get(`/services/${serviceId}/balances`)

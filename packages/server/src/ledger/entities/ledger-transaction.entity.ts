@@ -1,11 +1,11 @@
-import type { Entry, LedgerTransaction } from '../../generated/prisma/client.js';
+import type { AccountType, Entry, LedgerTransaction } from '../../generated/prisma/client.js';
 import { Currency } from '../../money/currency.js';
 import { ExchangeRate } from '../../money/exchange-rate.js';
 import type { DraftEntry } from '../accounting-transaction.js';
 import { EntryEntity } from './entry.entity.js';
 
 export type LedgerTransactionRecord = LedgerTransaction & {
-  entries: Array<Entry & { account: { code: string; name: string } }>;
+  entries: Array<Entry & { account: { code: string; name: string; type: AccountType } }>;
   service: { baseCurrency: string };
   reversedBy: { id: string } | null;
 };

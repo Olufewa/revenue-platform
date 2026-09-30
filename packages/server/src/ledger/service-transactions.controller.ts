@@ -18,6 +18,15 @@ export class ServiceTransactionsController {
     return this.transactions.listForOrderForUser(serviceId, user.sub, orderId);
   }
 
+  @Get('orders/:orderId/summary')
+  summary(
+    @Param('serviceId') serviceId: string,
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: { sub: string },
+  ) {
+    return this.transactions.summaryForUser(serviceId, user.sub, orderId);
+  }
+
   @Get('transactions')
   list(
     @Param('serviceId') serviceId: string,

@@ -148,6 +148,54 @@ export class TransactionsService {
     return transaction;
   }
 
+  /**
+   * How much of an order the ledger has recognised as income. Reported, not
+   * enforced: partial payments, refunds and corrections are all legitimate.
+   * `fullyRecognised` compares income booked in the order's own currency
+   * with the order total; income booked in other currencies is listed
+   * separately and in base currency.
+   */
+  async summary(service: ServiceEntity, orderId: string) {
+    const order = await this.orders.findOne(service.id, orderId);
+    const transactions = await this.transactions.listForOrder(service.id, orderId);
+
+    const orderCurrency = order.total.currency;
+    let base = Money.zero(service.baseCurrency);
+    const byCurrency = new Map<string, Money>();
+
+    for (const txn of transactions) {
+      for (const entry of txn.entries) {
+        if (entry.account.type !== 'INCOME') continue;
+
+        const sign = (m: Money) => (entry.direction === 'CREDIT' ? m : m.negate());
+        base = base.add(sign(entry.baseAmount));
+
+        const code = entry.amount.currency.code;
+        const sofar = byCurrency.get(code) ?? Money.zero(entry.amount.currency);
+        byCurrency.set(code, sofar.add(sign(entry.amount)));
+      }
+    }
+
+    const inOrderCurrency = byCurrency.get(orderCurrency.code) ?? Money.zero(orderCurrency);
+
+    return {
+      order,
+      transactionCount: transactions.length,
+      reversedCount: transactions.filter((t) => t.isReversed).length,
+      income: {
+        base,
+        byCurrency: [...byCurrency.values()],
+      },
+      outstanding: order.total.subtract(inOrderCurrency),
+      fullyRecognised: inOrderCurrency.equals(order.total),
+    };
+  }
+
+  async summaryForUser(serviceId: string, userId: string, orderId: string) {
+    const service = await this.services.assertCanAccess(serviceId, userId);
+    return this.summary(service, orderId);
+  }
+
   async list(serviceId: string, query: ListPageDto) {
     const page = await this.transactions.listPage(serviceId, {
       limit: query.limit ?? 20,

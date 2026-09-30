@@ -93,7 +93,14 @@ export function transactionFixture(
       amountMinor: e.amount,
       baseAmountMinor: e.base ?? e.amount,
       occurredAt,
-      account: { code: e.code, name: e.code },
+      account: { code: e.code, name: e.code, type: accountTypeFor(e.code) },
     })),
   });
+}
+
+function accountTypeFor(code: string): AccountType {
+  if (code.endsWith('_revenue')) return 'INCOME';
+  if (code.endsWith('_payable')) return 'LIABILITY';
+  if (code.endsWith('_fees')) return 'EXPENSE';
+  return 'ASSET';
 }

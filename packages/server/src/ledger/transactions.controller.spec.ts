@@ -11,6 +11,8 @@ import { TransactionsService } from './transactions.service.js';
 describe('Transactions controllers', () => {
   const transactions = {
     record: vi.fn(),
+    summary: vi.fn(),
+    summaryForUser: vi.fn(),
     list: vi.fn(),
     listForUser: vi.fn(),
     reverse: vi.fn(),
@@ -164,6 +166,30 @@ describe('Transactions controllers', () => {
         .send({ ...sale, orderId: 'ord_2' })
         .expect(400);
     });
+  });
+
+  it('GET /orders/:orderId/summary returns the order ledger summary', async () => {
+    transactions.summary.mockResolvedValue({ fullyRecognised: true });
+
+    const res = await request(t.app.getHttpServer())
+      .get('/orders/ord_1/summary')
+      .set('x-api-key', apiKey)
+      .expect(200);
+
+    expect(transactions.summary.mock.calls[0][0]).toBeInstanceOf(ServiceEntity);
+    expect(transactions.summary.mock.calls[0][1]).toBe('ord_1');
+    expect(res.body.fullyRecognised).toBe(true);
+  });
+
+  it('GET /services/:serviceId/orders/:orderId/summary (dashboard)', async () => {
+    transactions.summaryForUser.mockResolvedValue({ fullyRecognised: false });
+
+    await request(t.app.getHttpServer())
+      .get('/services/svc_1/orders/ord_1/summary')
+      .set('Authorization', t.bearer('usr_1'))
+      .expect(200);
+
+    expect(transactions.summaryForUser).toHaveBeenCalledWith('svc_1', 'usr_1', 'ord_1');
   });
 
   it('GET /transactions lists them with paging', async () => {

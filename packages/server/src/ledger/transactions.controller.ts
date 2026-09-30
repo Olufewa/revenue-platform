@@ -29,6 +29,11 @@ export class TransactionsController {
     return this.transactions.listForOrder(service.id, orderId);
   }
 
+  @Get('orders/:orderId/summary')
+  summary(@Param('orderId') orderId: string, @CurrentService() service: ServiceEntity) {
+    return this.transactions.summary(service, orderId);
+  }
+
   @Post('transactions')
   recordStandalone(
     @Body() dto: CreateStandaloneTransactionDto,

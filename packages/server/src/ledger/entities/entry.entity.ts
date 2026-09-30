@@ -1,8 +1,8 @@
-import type { Entry, EntryDirection } from '../../generated/prisma/client.js';
+import type { AccountType, Entry, EntryDirection } from '../../generated/prisma/client.js';
 import type { Currency } from '../../money/currency.js';
 import { Money } from '../../money/money.js';
 
-type EntryAccount = { code: string; name: string };
+type EntryAccount = { code: string; name: string; type: AccountType };
 
 /** One leg of a ledger transaction, in its own and the base currency. */
 export class EntryEntity {

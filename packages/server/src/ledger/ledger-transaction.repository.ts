@@ -10,7 +10,7 @@ import { LedgerTransactionEntity } from './entities/ledger-transaction.entity.js
 
 const INCLUDE = {
   entries: {
-    include: { account: { select: { code: true, name: true } } },
+    include: { account: { select: { code: true, name: true, type: true } } },
     orderBy: [{ direction: 'asc' as const }, { id: 'asc' as const }],
   },
   service: { select: { baseCurrency: true } },
