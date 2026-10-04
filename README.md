@@ -16,39 +16,41 @@ ESM throughout, Node 24.
 ## Layout
 
 ```
-packages/server/          the API
-  prisma/schema.prisma    database schema and migrations
-  src/prisma/             PrismaService, wired with the pg driver adapter
-  src/money/              Money, Currency, ExchangeRate (pure, no framework)
-  src/identity/           register / login
-  src/services/           services, base currency, API keys, roles
-  src/accounts/           per-service chart of accounts
-  src/orders/             order intake, idempotent on externalId
-  src/ledger/             balanced accounting transactions and reversals
-  src/reports/            trial balance and revenue report
+packages/
+  server/                 the API
+    prisma/schema.prisma  database schema and migrations
+    src/prisma/           PrismaService, wired with the pg driver adapter
+    src/money/            Money, Currency, ExchangeRate (pure, no framework)
+    src/identity/         register / login
+    src/services/         services, base currency, API keys, roles
+    src/accounts/         per-service chart of accounts
+    src/orders/           order intake, idempotent on externalId
+    src/ledger/           balanced accounting transactions and reversals
+    src/reports/          trial balance and revenue report
 docs/                     user flow guide
 postman/                  importable request collection with assertions
 ```
 
 ## Getting started
 
+Run from the repository root:
+
 ```bash
-cd packages/server
-cp .env.example .env      # fill in DATABASE_URL and JWT_SECRET
+cp packages/server/.env.example packages/server/.env      # fill in DATABASE_URL and JWT_SECRET
 npm install
-npx prisma migrate dev
-npx prisma generate
-npm run start:dev
+npm run db:deploy
+npm run db:generate
+npm run dev
 ```
 
-The API listens on the `PORT` set in `.env`, defaulting to 3003. Interactive
+The API listens on the `PORT` set in `packages/server/.env`, defaulting to 3003. Interactive
 API docs are at `/docs` (raw OpenAPI at `/docs-json`).
 See `docs/user-flow.md` for the end-to-end flow.
 
 ### Tests
 
 ```bash
-npm test            # unit + controller specs, no database
+npm test            # unit + controller specs, no database (runs server workspace)
 npm run test:e2e    # full flow against real Postgres
 ```
 
