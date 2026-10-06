@@ -13,7 +13,13 @@ import { ReportsController } from './reports.controller.js';
 import { ReportsService } from './reports.service.js';
 
 describe('ReportsController', () => {
-  const reports = { balances: vi.fn(), revenue: vi.fn() };
+  const reports = {
+    balances: vi.fn(),
+    revenue: vi.fn(),
+    incomeStatement: vi.fn(),
+    balanceSheet: vi.fn(),
+    cashFlow: vi.fn(),
+  };
   let t: TestApp;
 
   beforeAll(async () => {
@@ -66,6 +72,36 @@ describe('ReportsController', () => {
       .get('/services/svc_1/reports/revenue?from=last-week')
       .set('Authorization', t.bearer('usr_1'))
       .expect(400);
+  });
+
+  it('routes the three financial statements', async () => {
+    const server = t.app.getHttpServer();
+    for (const fn of ['incomeStatement', 'balanceSheet', 'cashFlow'] as const) {
+      reports[fn].mockResolvedValue({});
+    }
+
+    await request(server)
+      .get('/services/svc_1/reports/income-statement?from=2026-10-01')
+      .set('Authorization', t.bearer('usr_1'))
+      .expect(200);
+    await request(server)
+      .get('/services/svc_1/reports/balance-sheet?asOf=2026-10-31')
+      .set('Authorization', t.bearer('usr_1'))
+      .expect(200);
+    await request(server)
+      .get('/services/svc_1/reports/cash-flow?to=2026-10-31')
+      .set('Authorization', t.bearer('usr_1'))
+      .expect(200);
+
+    expect(reports.incomeStatement).toHaveBeenCalledWith('svc_1', 'usr_1', {
+      from: '2026-10-01',
+    });
+    expect(reports.balanceSheet).toHaveBeenCalledWith('svc_1', 'usr_1', {
+      asOf: '2026-10-31',
+    });
+    expect(reports.cashFlow).toHaveBeenCalledWith('svc_1', 'usr_1', {
+      to: '2026-10-31',
+    });
   });
 
   it('returns 401 without a bearer token', async () => {

@@ -30,4 +30,31 @@ export class ReportsController {
   ) {
     return this.reports.revenue(serviceId, user.sub, query);
   }
+
+  @Get('reports/income-statement')
+  incomeStatement(
+    @Param('serviceId') serviceId: string,
+    @Query() query: DateRangeDto,
+    @CurrentUser() user: { sub: string },
+  ) {
+    return this.reports.incomeStatement(serviceId, user.sub, query);
+  }
+
+  @Get('reports/balance-sheet')
+  balanceSheet(
+    @Param('serviceId') serviceId: string,
+    @Query() query: BalancesQueryDto,
+    @CurrentUser() user: { sub: string },
+  ) {
+    return this.reports.balanceSheet(serviceId, user.sub, query);
+  }
+
+  @Get('reports/cash-flow')
+  cashFlow(
+    @Param('serviceId') serviceId: string,
+    @Query() query: DateRangeDto,
+    @CurrentUser() user: { sub: string },
+  ) {
+    return this.reports.cashFlow(serviceId, user.sub, query);
+  }
 }

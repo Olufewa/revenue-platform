@@ -11,10 +11,14 @@ export class EntryRepository {
     return new EntryRepository(tx);
   }
 
-  /** Base-currency totals per account and direction, up to `asOf` inclusive. */
+  /**
+   * Base-currency totals per account and direction, up to `asOf` inclusive.
+   * Pass `from` to count only entries from that instant onwards (a period).
+   */
   async sumBaseByAccount(
     serviceId: string,
     asOf: Date,
+    from?: Date,
   ): Promise<
     Array<{
       accountId: string;
@@ -24,7 +28,7 @@ export class EntryRepository {
   > {
     const grouped = await this.db.entry.groupBy({
       by: ['accountId', 'direction'],
-      where: { serviceId, occurredAt: { lte: asOf } },
+      where: { serviceId, occurredAt: { gte: from, lte: asOf } },
       _sum: { baseAmountMinor: true },
     });
 

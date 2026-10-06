@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "MTN Revenue Platform",
-    "description": "API collection for the MTN Revenue Platform.\n\n1. Identity (register, login, conflict and wrong-password checks)\n2. Services & API keys (base currency, keys, whoami, revocation, RBAC)\n3. Chart of accounts (per-service accounts, duplicate and validation checks)\n4. Orders (intake over x-api-key, idempotency, validation)\n5. Ledger transactions (balanced entries, idempotency, imbalance and FX checks, reversal)\n6. Reports (trial balance, daily revenue in base currency)\n\n### How to run:\n1. Apply migrations and start the server: in `packages/server`, run `npm run db:migrate` then `npm run start:dev`\n2. In Postman, click **Import** and select this file\n3. Click **Run collection**. Each run creates a fresh user and service, so runs don't interfere.\n\nInteractive API docs are served at `{{baseUrl}}/docs`.",
+    "description": "API collection for the MTN Revenue Platform.\n\n1. Identity (register, login, conflict and wrong-password checks)\n2. Services & API keys (base currency, keys, whoami, revocation, RBAC)\n3. Chart of accounts (per-service accounts, duplicate and validation checks)\n4. Orders (intake over x-api-key, idempotency, validation, dashboard & API-key reads)\n5. Ledger transactions (balanced entries, idempotency, imbalance and FX checks, reversals, standalone and order-scoped reads)\n6. Reports (trial balance, daily revenue, income statement, balance sheet, cash flow in base currency)\n\n### How to run:\n1. From the repository root, deploy migrations, generate Prisma client, and start the server:\n   npm run db:deploy\n   npm run db:generate\n   npm run dev\n2. In Postman, click **Import** and select this file (`postman/revenue-platform.postman_collection.json`)\n3. Click **Run collection**. Each run creates a fresh user and service, so runs run cleanly and do not interfere.\n\nInteractive API docs are served at `{{baseUrl}}/docs`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -1332,7 +1332,95 @@
           }
         },
         {
-          "name": "07 · Get Order (Dashboard View)",
+          "name": "07 · Get Order via API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns the requested order', () => {",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('orderId'));",
+                  "    pm.expect(json.total.amount).to.eql('350000');",
+                  "    pm.expect(json.total.currency).to.eql('NGN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "08 · List Orders (Dashboard View)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Dashboard order list contains the order', () => {",
+                  "    pm.expect(json.orders).to.be.an('array');",
+                  "    pm.expect(json.orders.some(o => o.id === pm.collectionVariables.get('orderId'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/orders?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "09 · Get Order (Dashboard View)",
           "event": [
             {
               "listen": "test",
@@ -1369,7 +1457,7 @@
           }
         },
         {
-          "name": "08 · Order Ledger Summary (Before Transactions)",
+          "name": "10 · Order Ledger Summary (Before Transactions)",
           "event": [
             {
               "listen": "test",
@@ -1933,7 +2021,138 @@
           }
         },
         {
-          "name": "11 · List Order Transactions",
+          "name": "11 · List Transactions via API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Transaction list contains the sale transaction', () => {",
+                  "    pm.expect(json.transactions).to.be.an('array');",
+                  "    pm.expect(json.transactions.some(t => t.id === pm.collectionVariables.get('transactionId'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{ingestApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "12 · List Transactions (Dashboard View)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Dashboard transactions list contains the sale transaction', () => {",
+                  "    pm.expect(json.transactions).to.be.an('array');",
+                  "    pm.expect(json.transactions.some(t => t.id === pm.collectionVariables.get('transactionId'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/transactions?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "13 · Get Transaction by ID (Dashboard View)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns transaction with entries', () => {",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('transactionId'));",
+                  "    pm.expect(json.entries).to.be.an('array');",
+                  "    pm.expect(json.entries.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/transactions/{{transactionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "transactions",
+                "{{transactionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "14 · List Order Transactions via API Key",
           "event": [
             {
               "listen": "test",
@@ -1976,7 +2195,46 @@
           }
         },
         {
-          "name": "12 · Reverse Sale Transaction",
+          "name": "15 · List Order Transactions (Dashboard View)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns transactions array for the order', () => {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.some(t => t.id === pm.collectionVariables.get('transactionId'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/orders/{{orderId}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "orders",
+                "{{orderId}}",
+                "transactions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "16 · Reverse Sale Transaction",
           "event": [
             {
               "listen": "test",
@@ -2031,7 +2289,7 @@
           }
         },
         {
-          "name": "13 · Reverse Again (Expect 409)",
+          "name": "17 · Reverse Again (Expect 409)",
           "event": [
             {
               "listen": "test",
@@ -2079,7 +2337,7 @@
           }
         },
         {
-          "name": "14 · Get Original Transaction Shows Reversal Link",
+          "name": "18 · Get Original Transaction Shows Reversal Link",
           "event": [
             {
               "listen": "test",
@@ -2121,7 +2379,7 @@
           }
         },
         {
-          "name": "15 · Order Ledger Summary (After Reversal)",
+          "name": "19 · Order Ledger Summary via API Key (After Reversal)",
           "event": [
             {
               "listen": "test",
@@ -2164,6 +2422,48 @@
             },
             "auth": {
               "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "20 · Order Ledger Summary (Dashboard View)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Dashboard view matches order summary structure', () => {",
+                  "    pm.expect(json.transactionCount).to.be.a('number');",
+                  "    pm.expect(json.income.base).to.have.property('amount');",
+                  "    pm.expect(json.income.base).to.have.property('currency');",
+                  "    pm.expect(json.outstanding).to.have.property('amount');",
+                  "    pm.expect(json.outstanding).to.have.property('currency');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/orders/{{orderId}}/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "orders",
+                "{{orderId}}",
+                "summary"
+              ]
             }
           }
         }
@@ -2254,6 +2554,150 @@
                 "{{serviceId}}",
                 "reports",
                 "revenue"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-09-01T00:00:00.000Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-09-30T23:59:59.999Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 · Income Statement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Net income is total income less total expenses', () => {",
+                  "    const net = BigInt(json.income.total.amount) - BigInt(json.expenses.total.amount);",
+                  "    pm.expect(json.netIncome.amount).to.eql(net.toString());",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/reports/income-statement?from=2026-09-01T00:00:00.000Z&to=2026-09-30T23:59:59.999Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "reports",
+                "income-statement"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-09-01T00:00:00.000Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-09-30T23:59:59.999Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 · Balance Sheet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Assets equal liabilities plus equity', () => {",
+                  "    pm.expect(json.balanced).to.eql(true);",
+                  "    pm.expect(json.assets.total).to.eql(json.totalLiabilitiesAndEquity);",
+                  "});",
+                  "pm.test('Equity includes retained earnings', () => {",
+                  "    pm.expect(json.equity.lines.map(l => l.accountCode)).to.include('retained_earnings');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/reports/balance-sheet?asOf=2026-09-30T23:59:59.999Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "reports",
+                "balance-sheet"
+              ],
+              "query": [
+                {
+                  "key": "asOf",
+                  "value": "2026-09-30T23:59:59.999Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 · Cash Flow Statement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('Opening cash plus net change equals closing cash', () => {",
+                  "    pm.expect(json.reconciles).to.eql(true);",
+                  "    const closing = BigInt(json.openingCash.amount) + BigInt(json.netChangeInCash.amount);",
+                  "    pm.expect(json.closingCash.amount).to.eql(closing.toString());",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/services/{{serviceId}}/reports/cash-flow?from=2026-09-01T00:00:00.000Z&to=2026-09-30T23:59:59.999Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services",
+                "{{serviceId}}",
+                "reports",
+                "cash-flow"
               ],
               "query": [
                 {

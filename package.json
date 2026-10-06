@@ -23,6 +23,8 @@
     "dev": "npm run start:dev -w server",
     "lint": "npm run lint -w server",
     "test": "npm run test -w server",
-    "test:e2e": "npm run test:e2e -w server"
+    "test:e2e": "npm run test:e2e -w server",
+    "sim:setup": "npm run setup -w simulator",
+    "sim:traffic": "npm run traffic -w simulator"
   }
 }
