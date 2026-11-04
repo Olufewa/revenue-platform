@@ -13,6 +13,8 @@ follows Martin Fowler's Money, Account and Accounting Transaction patterns.
 NestJS 12 · Prisma 7.10 · PostgreSQL (Supabase) · TypeScript 6 · vitest · oxlint
 ESM throughout, Node 24.
 
+Web app: Next.js 16 · React 19 · Tailwind CSS 4 · Zustand 5
+
 ## Layout
 
 ```
@@ -27,6 +29,7 @@ packages/
     src/orders/           order intake, idempotent on externalId
     src/ledger/           balanced accounting transactions and reversals
     src/reports/          trial balance and revenue report
+  web/                    the web app and design system (see its README)
 docs/                     user flow guide
 postman/                  importable request collection with assertions
 ```
@@ -46,6 +49,17 @@ npm run dev
 The API listens on the `PORT` set in `packages/server/.env`, defaulting to 3003. Interactive
 API docs are at `/docs` (raw OpenAPI at `/docs-json`).
 See `docs/user-flow.md` for the end-to-end flow.
+
+### Web app
+
+```bash
+cp packages/web/.env.example packages/web/.env
+npm run dev:web
+```
+
+The app runs on http://localhost:3001 and proxies `/api/*` to the API. The
+screens are placeholders for now. The design system is at `/design-system`.
+See `packages/web/README.md`.
 
 ### Tests
 
@@ -84,7 +98,9 @@ All routes are under `http://localhost:3003`.
 | Method | Route | Auth | Returns |
 |---|---|---|---|
 | POST | `/auth/register` | — | 201 the new user |
-| POST | `/auth/login` | — | 200 `{ access_token }` |
+| POST | `/auth/login` | — | 200 `{ access_token, refresh_token, refresh_expires_in }` |
+| POST | `/auth/refresh` | — | 200 a new set of tokens, 401 if the refresh token is invalid |
+| POST | `/auth/logout` | — | 204, ends that session |
 
 ### Services and API keys
 

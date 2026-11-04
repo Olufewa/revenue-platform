@@ -4,7 +4,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { IdentityController } from './identity.controller.js';
 import { IdentityService } from './identity.service.js';
 import { AuthGuard } from './auth.guard.js';
+import { RefreshTokenRepository } from './refresh-token.repository.js';
 import { UserRepository } from './user.repository.js';
+
+const ACCESS_TOKEN_TTL = '15m';
 
 @Module({
   imports: [
@@ -13,12 +16,17 @@ import { UserRepository } from './user.repository.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1d' },
+        signOptions: { expiresIn: ACCESS_TOKEN_TTL },
       }),
     }),
   ],
   controllers: [IdentityController],
-  providers: [IdentityService, AuthGuard, UserRepository],
+  providers: [
+    IdentityService,
+    AuthGuard,
+    UserRepository,
+    RefreshTokenRepository,
+  ],
   exports: [JwtModule, AuthGuard, UserRepository],
 })
 export class IdentityModule {}

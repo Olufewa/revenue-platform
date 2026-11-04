@@ -52,11 +52,31 @@ POST /auth/register
 
 POST /auth/login
 { "email": "ada@mtn.test", "password": "Password123!" }
-→ 200 { "access_token": "eyJ…" }
+→ 200 { "access_token": "eyJ…", "refresh_token": "…", "refresh_expires_in": 604800 }
 ```
 
-Send the token as `Authorization: Bearer eyJ…` on every request below that
-says *person*.
+Send the access token as `Authorization: Bearer eyJ…` on every request below
+that says *person*. It lasts 15 minutes.
+
+### Stay signed in
+
+```http
+POST /auth/refresh
+{ "refresh_token": "…" }
+→ 200 { "access_token": "eyJ…", "refresh_token": "…", "refresh_expires_in": 604800 }
+
+POST /auth/logout
+{ "refresh_token": "…" }
+→ 204
+```
+
+A refresh token lasts 7 days and works once: each refresh returns a new one, so
+always keep the latest. Sending a spent token again within 10 seconds is treated
+as a normal retry, which covers parallel requests. After that it counts as theft,
+so every token from that login is revoked and the person has to log in again.
+
+Logging out revokes the tokens from that login, not from other devices. An access
+token already issued keeps working until it expires, up to 15 minutes later.
 
 ### Create a service
 
