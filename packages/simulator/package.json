@@ -1,0 +1,13 @@
+{
+  "name": "simulator",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node --env-file=.env src/setup.ts",
+    "traffic": "node --env-file=.env src/traffic.ts"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.6.0"
+  }
+}

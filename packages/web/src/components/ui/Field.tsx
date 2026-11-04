@@ -1,0 +1,38 @@
+import { useId } from 'react';
+import { Input, type InputProps } from './Input';
+
+interface FieldProps extends InputProps {
+  label: string;
+  hint?: string;
+  error?: string;
+}
+
+/** A labelled input, with its hint or error tied to it for assistive tech. */
+export function Field({ label, hint, error, id, ...inputProps }: FieldProps) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const message = error ?? hint;
+  const messageId = `${inputId}-message`;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={inputId} className="text-small font-medium">
+        {label}
+      </label>
+      <Input
+        id={inputId}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={message ? messageId : undefined}
+        {...inputProps}
+      />
+      {message && (
+        <span
+          id={messageId}
+          className={`text-caption ${error ? 'text-reversed' : 'text-ink-2'}`}
+        >
+          {message}
+        </span>
+      )}
+    </div>
+  );
+}

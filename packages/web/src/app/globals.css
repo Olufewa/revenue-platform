@@ -1,0 +1,151 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens from the Revenue Platform mood board.
+ * The default Tailwind palette is removed so only these colours can be used.
+ * `static` emits every token, including those the style guide reads by name.
+ */
+@theme static {
+  --color-*: initial;
+
+  /* Surfaces */
+  --color-paper: #fafaf8;
+  --color-surface: #ffffff;
+  --color-muted: #f1f0ec;
+
+  /* Lines */
+  --color-line: #e7e6e1;
+  --color-line-strong: #d6d4cd;
+  --color-grid: #efeeea;
+
+  /* Ink */
+  --color-ink: #141414;
+  --color-ink-hover: #57574f;
+  --color-ink-body: #3f3f3b;
+  --color-ink-2: #5c5c57;
+  --color-ink-3: #75756f;
+  --color-ink-faint: #a3a39c;
+  --color-on-ink-2: #c9c8c2;
+  --color-on-ink-3: #a9a8a2;
+
+  /* The one accent: fills only, with ink on top */
+  --color-gold: #ffcb05;
+  --color-gold-hover: #f2c000;
+  --color-gold-wash: #fff8d6;
+
+  /* Status */
+  --color-posted: #1f7a4d;
+  --color-posted-wash: #e9f3ec;
+  --color-pending: #a15c07;
+  --color-pending-wash: #fdf0e1;
+  --color-reversed: #b42318;
+  --color-reversed-wash: #fbeae8;
+  --color-duplicate: #3f4650;
+  --color-duplicate-wash: #eef0f2;
+  --color-danger-line: #f1c7c2;
+
+  /* Chart series: one per service, differing in lightness as well as hue */
+  --color-series-1: #1c1c1c;
+  --color-series-2: #00678f;
+  --color-series-3: #e8b500;
+  --color-series-4: #c9c4b9;
+
+  /* Radius */
+  --radius-bar: 3px;
+  --radius-badge: 6px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+
+  /* Control height: see the touch override below */
+  --spacing-control: 2.25rem;
+
+  /* Fonts: the variables are set by next/font in the root layout */
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Type */
+  --text-display: 2rem;
+  --text-display--line-height: 1.15;
+  --text-display--font-weight: 600;
+  --text-display--letter-spacing: -0.025em;
+
+  --text-section: 1.25rem;
+  --text-section--line-height: 1.3;
+  --text-section--font-weight: 600;
+  --text-section--letter-spacing: -0.01em;
+
+  --text-panel-title: 1rem;
+  --text-panel-title--line-height: 1.4;
+  --text-panel-title--font-weight: 600;
+
+  --text-figure: 2rem;
+  --text-figure--line-height: 1.15;
+  --text-figure--font-weight: 500;
+  --text-figure--letter-spacing: -0.03em;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.55;
+
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.5;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.4;
+}
+
+/* Controls are 36px on desktop and 44px on touch. */
+@media (pointer: coarse) {
+  @layer base {
+    :root {
+      --spacing-control: 2.75rem;
+    }
+  }
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  a {
+    color: var(--color-ink);
+    text-decoration: underline;
+  }
+
+  a:hover {
+    color: var(--color-ink-hover);
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+}
+
+/* Tabular figures, so columns of money line up. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 12 / 500 caps */
+@utility label {
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-2);
+}

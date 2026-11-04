@@ -10,3 +10,7 @@ generated/
 .vscode/
 .idea/
 *.tsbuildinfo
+
+# next.js
+.next/
+next-env.d.ts
