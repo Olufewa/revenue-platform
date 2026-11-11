@@ -64,3 +64,14 @@ export function formatCompact(money: Money): string {
     maximumSignificantDigits: 3,
   }).format(toDecimal(money));
 }
+
+/**
+ * Adds amounts in BigInt, so nothing is lost to floating point. Returns null
+ * when the amounts are in different currencies, because they can't be added.
+ */
+export function sumMoney(values: Money[], currency: string): Money | null {
+  if (values.some((value) => value.currency !== currency)) return null;
+
+  const total = values.reduce((sum, value) => sum + BigInt(value.amount), 0n);
+  return { amount: total.toString(), currency };
+}

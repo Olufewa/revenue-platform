@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCompact, formatMoney } from './money';
+import { formatCompact, formatMoney, sumMoney } from './money';
 
 const ngn = (amount: string) => ({ amount, currency: 'NGN' });
 
@@ -46,5 +46,20 @@ describe('formatCompact', () => {
   it('keeps small and negative amounts readable', () => {
     expect(formatCompact(ngn('0'))).toBe('₦0');
     expect(formatCompact(ngn('-4821793050'))).toBe('-₦48.2M');
+  });
+});
+
+describe('sumMoney', () => {
+  it('adds amounts exactly, beyond what a JavaScript number holds', () => {
+    expect(sumMoney([ngn('9007199254740993'), ngn('7')], 'NGN')).toEqual(
+      ngn('9007199254741000'),
+    );
+    expect(sumMoney([], 'NGN')).toEqual(ngn('0'));
+  });
+
+  it('refuses to add different currencies', () => {
+    expect(
+      sumMoney([ngn('100'), { amount: '100', currency: 'USD' }], 'NGN'),
+    ).toBeNull();
   });
 });
