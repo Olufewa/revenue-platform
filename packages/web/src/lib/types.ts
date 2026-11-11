@@ -47,3 +47,41 @@ export interface Balances {
   }[];
   totals: { debit: Money; credit: Money };
 }
+
+/** `POST /services/:id/keys`: the listed fields plus the full key, shown once. */
+export interface CreatedApiKey extends ApiKey {
+  key: string;
+}
+
+/** An order, as the orders endpoints return it. */
+export interface Order {
+  id: string;
+  externalId: string;
+  total: Money;
+  description: string | null;
+  customerRef: string | null;
+  placedAt: string;
+  createdAt: string;
+}
+
+/** One leg of a ledger transaction. */
+export interface Entry {
+  id: string;
+  accountCode: string;
+  accountName: string;
+  direction: 'DEBIT' | 'CREDIT';
+  amount: Money;
+}
+
+/** A balanced set of entries, as the transactions endpoints return it. */
+export interface LedgerTransaction {
+  id: string;
+  orderId: string | null;
+  externalId: string;
+  description: string | null;
+  currency: string;
+  occurredAt: string;
+  reversesTransactionId: string | null;
+  reversedByTransactionId: string | null;
+  entries: Entry[];
+}
