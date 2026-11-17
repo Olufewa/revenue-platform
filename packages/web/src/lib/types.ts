@@ -60,6 +60,8 @@ export interface Order {
   total: Money;
   description: string | null;
   customerRef: string | null;
+  /** Anything extra the product team sent, such as the sales channel. */
+  metadata: Record<string, unknown> | null;
   placedAt: string;
   createdAt: string;
 }
@@ -70,7 +72,10 @@ export interface Entry {
   accountCode: string;
   accountName: string;
   direction: 'DEBIT' | 'CREDIT';
+  /** In the transaction's currency. */
   amount: Money;
+  /** Converted to the service's base currency. */
+  baseAmount: Money;
 }
 
 /** A balanced set of entries, as the transactions endpoints return it. */
@@ -80,8 +85,29 @@ export interface LedgerTransaction {
   externalId: string;
   description: string | null;
   currency: string;
+  /** Rate to the base currency, as text such as "1550.25". Null when not needed. */
+  exchangeRate: string | null;
+  rateSource: string | null;
   occurredAt: string;
+  createdAt: string;
   reversesTransactionId: string | null;
   reversedByTransactionId: string | null;
   entries: Entry[];
+}
+
+/** `GET /services/:id/orders/:orderId/summary`: how much of an order is booked as income. */
+export interface OrderSummary {
+  order: Order;
+  transactionCount: number;
+  reversedCount: number;
+  income: { base: Money; byCurrency: Money[] };
+  /** The order total minus the income recognised in the order's currency. */
+  outstanding: Money;
+  fullyRecognised: boolean;
+}
+
+/** One page of a list. Pass `nextCursor` back as `?cursor=` for the next page. */
+export interface Page<T> {
+  items: T[];
+  nextCursor: string | null;
 }
