@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Field, SelectField } from '@/components/ui/Field';
+import { ACCOUNT_TYPES, CODE_PATTERN } from '@/lib/accounts';
 import { api, ApiError } from '@/lib/api';
 import type { AccountType } from '@/lib/types';
 import { describeError } from '@/lib/use-api';
@@ -38,17 +39,6 @@ const STARTER: AccountChoice[] = [
   },
   { code: 'refunds', name: 'Refunds paid', type: 'EXPENSE', selected: false },
 ];
-
-const ACCOUNT_TYPES: AccountType[] = [
-  'ASSET',
-  'LIABILITY',
-  'EQUITY',
-  'INCOME',
-  'EXPENSE',
-];
-
-/** The same rule the API checks: lowercase, digits, single underscores. */
-const CODE_PATTERN = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 export function AccountsForm() {
   const { serviceId } = useParams<{ serviceId: string }>();

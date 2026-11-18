@@ -111,3 +111,65 @@ export interface Page<T> {
   items: T[];
   nextCursor: string | null;
 }
+
+/** An account in a service's chart of accounts. */
+export interface Account {
+  id: string;
+  code: string;
+  name: string;
+  type: AccountType;
+  /** Archived accounts take no new entries. Reversals still work. */
+  archived: boolean;
+  archivedAt: string | null;
+  createdAt: string;
+}
+
+/** One account's line on a statement, on its normal side, in base currency. */
+export interface StatementLine {
+  accountCode: string;
+  accountName: string;
+  amount: Money;
+}
+
+/** A group of statement lines and their total, such as "Income". */
+export interface StatementSection {
+  lines: StatementLine[];
+  total: Money;
+}
+
+/** `GET /services/:id/reports/income-statement`: income less expenses for a period. */
+export interface IncomeStatement {
+  baseCurrency: string;
+  period: { from: string; to: string };
+  income: StatementSection;
+  expenses: StatementSection;
+  netIncome: Money;
+}
+
+/** `GET /services/:id/reports/balance-sheet`: what the service holds and owes at a moment. */
+export interface BalanceSheet {
+  baseCurrency: string;
+  asOf: string;
+  assets: StatementSection;
+  liabilities: StatementSection;
+  /** Includes a worked-out `retained_earnings` line. */
+  equity: StatementSection;
+  totalLiabilitiesAndEquity: Money;
+  balanced: boolean;
+}
+
+/** `GET /services/:id/reports/cash-flow`: how cash moved over a period (indirect method). */
+export interface CashFlow {
+  baseCurrency: string;
+  period: { from: string; to: string };
+  cashAccounts: string[];
+  operating: { netIncome: Money; adjustments: StatementLine[]; total: Money };
+  financing: StatementSection;
+  netChangeInCash: Money;
+  cashReceived: Money;
+  cashPaidOut: Money;
+  openingCash: Money;
+  closingCash: Money;
+  /** Opening cash plus the change equals closing cash. */
+  reconciles: boolean;
+}

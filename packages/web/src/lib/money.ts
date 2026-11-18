@@ -75,3 +75,13 @@ export function sumMoney(values: Money[], currency: string): Money | null {
   const total = values.reduce((sum, value) => sum + BigInt(value.amount), 0n);
   return { amount: total.toString(), currency };
 }
+
+/**
+ * The change from `previous` to `current` in percent, such as 9.8 or -3.1.
+ * Null when there was nothing before, because a change from zero has no size.
+ */
+export function percentChange(current: Money, previous: Money): number | null {
+  const before = Number(previous.amount);
+  if (before === 0) return null;
+  return ((Number(current.amount) - before) / Math.abs(before)) * 100;
+}

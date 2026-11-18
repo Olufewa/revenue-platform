@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCompact, formatMoney, sumMoney } from './money';
+import { formatCompact, formatMoney, percentChange, sumMoney } from './money';
 
 const ngn = (amount: string) => ({ amount, currency: 'NGN' });
 
@@ -61,5 +61,16 @@ describe('sumMoney', () => {
     expect(
       sumMoney([ngn('100'), { amount: '100', currency: 'USD' }], 'NGN'),
     ).toBeNull();
+  });
+});
+
+describe('percentChange', () => {
+  it('gives the change in percent', () => {
+    expect(percentChange(ngn('110'), ngn('100'))).toBeCloseTo(10);
+    expect(percentChange(ngn('90'), ngn('100'))).toBeCloseTo(-10);
+  });
+
+  it('has no answer when there was nothing before', () => {
+    expect(percentChange(ngn('500'), ngn('0'))).toBe(null);
   });
 });

@@ -12,6 +12,7 @@ import { StatStrip, StatTile } from '@/components/ui/StatTile';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Table, Td, Th } from '@/components/ui/Table';
 import { api } from '@/lib/api';
+import { dailyValues } from '@/lib/daily-series';
 import { RANGE_LABELS, rangeStart } from '@/lib/date-range';
 import { formatCompact, formatMoney, sumMoney, type Money } from '@/lib/money';
 import type {
@@ -71,26 +72,6 @@ async function loadOverview(serviceId: string, from: string) {
     balances,
     recent: recent.transactions,
   } satisfies OverviewData;
-}
-
-/**
- * One value per day from `from` to now, with 0 for days with no income (the
- * API leaves them out). Days are named in the service's timezone, as the API
- * names them.
- */
-function dailyValues(report: RevenueReport, from: string, days: number) {
-  const dayName = new Intl.DateTimeFormat('en-CA', {
-    timeZone: report.timezone,
-  });
-  const byDay = new Map(
-    report.series.map((point) => [point.day, Number(point.amount.amount)]),
-  );
-  const start = new Date(from).getTime();
-
-  return Array.from(
-    { length: days },
-    (_, index) => byDay.get(dayName.format(start + index * DAY_MS)) ?? 0,
-  );
 }
 
 /** `▲ 9.8%` or `▼ 3.1%`, or nothing when there was no revenue before. */
@@ -274,7 +255,11 @@ function OverviewBody({
       <div className="grid grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] items-start gap-6">
         <Panel
           title="Balances"
-          meta={<Link href={`${path}/reports`}>Balance sheet →</Link>}
+          meta={
+            <Link href={`${path}/reports?tab=balance-sheet`}>
+              Balance sheet →
+            </Link>
+          }
         >
           <div className="num flex flex-col">
             {balances.accounts.map((account) => (

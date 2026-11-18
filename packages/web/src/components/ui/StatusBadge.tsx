@@ -3,9 +3,16 @@ import { clsx } from 'clsx';
 /**
  * `duplicate` is the API's idempotent replay of a request already recorded.
  * `reversal` is the mirror-image transaction that cancels another one out.
+ * `revoked` is an API key that no longer works.
  */
 export type Status =
-  'posted' | 'pending' | 'reversed' | 'reversal' | 'duplicate' | 'live';
+  | 'posted'
+  | 'pending'
+  | 'reversed'
+  | 'reversal'
+  | 'duplicate'
+  | 'revoked'
+  | 'live';
 
 const STATUS: Record<Status, { label: string; className: string }> = {
   posted: { label: 'Posted', className: 'bg-posted-wash text-posted' },
@@ -19,6 +26,7 @@ const STATUS: Record<Status, { label: string; className: string }> = {
     label: 'Duplicate',
     className: 'bg-duplicate-wash text-duplicate',
   },
+  revoked: { label: 'Revoked', className: 'bg-muted text-ink-3' },
   live: { label: 'LIVE', className: 'bg-ink text-surface tracking-[0.04em]' },
 };
 
@@ -50,6 +58,12 @@ function StatusMark({ status }: { status: Status }) {
       return (
         <span className="text-caption leading-none" aria-hidden>
           =
+        </span>
+      );
+    case 'revoked':
+      return (
+        <span className="text-caption leading-none" aria-hidden>
+          ⊘
         </span>
       );
     case 'live':
