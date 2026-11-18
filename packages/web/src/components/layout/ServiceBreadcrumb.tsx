@@ -1,15 +1,10 @@
 'use client';
 
-import { useCallback, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
-import type { Service } from '@/lib/types';
-import { useApi } from '@/lib/use-api';
+import { ServiceName } from './ServiceName';
 
-/**
- * `Services / MTN Data Bundles / …` above a service page. It loads the
- * service's name itself, so each page doesn't have to.
- */
+/** `Services / MTN Data Bundles / …` above a service page. */
 export function ServiceBreadcrumb({
   serviceId,
   children,
@@ -18,18 +13,17 @@ export function ServiceBreadcrumb({
   /** Anything after the service name, such as a link back to the list. */
   children?: ReactNode;
 }) {
-  const path = `/services/${encodeURIComponent(serviceId)}`;
-  const load = useCallback(() => api<Service>(path), [path]);
-  const { data: service } = useApi(load);
-
   return (
     <>
       <Link href="/services" className="text-ink-2">
         Services
       </Link>{' '}
       /{' '}
-      <Link href={`${path}/overview`} className="text-ink-2">
-        {service?.name ?? '…'}
+      <Link
+        href={`/services/${encodeURIComponent(serviceId)}/overview`}
+        className="text-ink-2"
+      >
+        <ServiceName serviceId={serviceId} />
       </Link>
       {children && <> / {children}</>}
     </>

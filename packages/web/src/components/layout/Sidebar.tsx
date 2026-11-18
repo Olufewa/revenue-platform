@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { signOut } from '@/lib/session';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { BrandMark } from './BrandMark';
+import { ServiceName } from './ServiceName';
 
 function Icon({ children }: { children: ReactNode }) {
   return (
@@ -147,7 +148,11 @@ export function Sidebar({ email }: { email: string }) {
         <span className="flex min-w-0 flex-col">
           <span className="text-[0.6875rem] text-ink-2">Service</span>
           <span className="truncate font-medium">
-            {serviceId ?? 'Choose a service'}
+            {serviceId ? (
+              <ServiceName serviceId={serviceId} />
+            ) : (
+              'Choose a service'
+            )}
           </span>
         </span>
         <svg
