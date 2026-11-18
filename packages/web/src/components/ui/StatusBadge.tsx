@@ -1,16 +1,32 @@
 import { clsx } from 'clsx';
 
-/** `duplicate` is the API's idempotent replay of a request already recorded. */
-export type Status = 'posted' | 'pending' | 'reversed' | 'duplicate' | 'live';
+/**
+ * `duplicate` is the API's idempotent replay of a request already recorded.
+ * `reversal` is the mirror-image transaction that cancels another one out.
+ * `revoked` is an API key that no longer works.
+ */
+export type Status =
+  | 'posted'
+  | 'pending'
+  | 'reversed'
+  | 'reversal'
+  | 'duplicate'
+  | 'revoked'
+  | 'live';
 
 const STATUS: Record<Status, { label: string; className: string }> = {
   posted: { label: 'Posted', className: 'bg-posted-wash text-posted' },
   pending: { label: 'Pending', className: 'bg-pending-wash text-pending' },
   reversed: { label: 'Reversed', className: 'bg-reversed-wash text-reversed' },
+  reversal: {
+    label: 'Reversal',
+    className: 'bg-duplicate-wash text-duplicate',
+  },
   duplicate: {
     label: 'Duplicate',
     className: 'bg-duplicate-wash text-duplicate',
   },
+  revoked: { label: 'Revoked', className: 'bg-muted text-ink-3' },
   live: { label: 'LIVE', className: 'bg-ink text-surface tracking-[0.04em]' },
 };
 
@@ -32,10 +48,22 @@ function StatusMark({ status }: { status: Status }) {
           ↺
         </span>
       );
+    case 'reversal':
+      return (
+        <span className="text-caption leading-none" aria-hidden>
+          ⇄
+        </span>
+      );
     case 'duplicate':
       return (
         <span className="text-caption leading-none" aria-hidden>
           =
+        </span>
+      );
+    case 'revoked':
+      return (
+        <span className="text-caption leading-none" aria-hidden>
+          ⊘
         </span>
       );
     case 'live':
@@ -46,11 +74,14 @@ function StatusMark({ status }: { status: Status }) {
 export function StatusBadge({
   status,
   size = 'md',
+  label,
 }: {
   status: Status;
   size?: 'sm' | 'md';
+  /** Replaces the usual word, such as "Fully recognised" for an order. */
+  label?: string;
 }) {
-  const { label, className } = STATUS[status];
+  const { className } = STATUS[status];
 
   return (
     <span
@@ -61,7 +92,7 @@ export function StatusBadge({
       )}
     >
       <StatusMark status={status} />
-      {label}
+      {label ?? STATUS[status].label}
     </span>
   );
 }

@@ -1,13 +1,18 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { ServicePagePlaceholder } from '@/components/layout/ServicePagePlaceholder';
+import { ReportsView } from './ReportsView';
 
 export const metadata: Metadata = { title: 'Reports' };
 
+/**
+ * The view reads `?tab=` from the address bar. Next.js asks for a Suspense
+ * boundary around anything that does, so the rest of the page can be built
+ * ahead of time.
+ */
 export default function ReportsPage() {
   return (
-    <ServicePagePlaceholder
-      title="Reports"
-      description="Revenue, income statement, balance sheet and cash flow."
-    />
+    <Suspense>
+      <ReportsView />
+    </Suspense>
   );
 }
